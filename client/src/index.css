@@ -1,0 +1,60 @@
+/* Base theme variables */
+:root {
+  --bg: #0f1724;
+  --text: #e6eef8;
+  --card-bg: rgba(255, 255, 255, 0.04);
+  --card-border: rgba(255, 255, 255, 0.12);
+}
+
+/* Light theme */
+[data-theme="light"] {
+  --bg: #f5f5f5;
+  --text: #1a1a1a;
+  --card-bg: rgba(255, 255, 255, 0.7);
+  --card-border: rgba(0, 0, 0, 0.1);
+}
+
+/* Reset */
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+}
+
+/* Utility: Glass card */
+.glass-card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 16px;
+  padding: 24px;
+  backdrop-filter: blur(12px);
+}
+
+:root[data-theme="dark"] {
+  --sidebar-bg-color: #14181e;
+  --sidebar-text-color: #f7f7f7;
+}
+
+:root[data-theme="light"] {
+  --sidebar-bg-color: #ffffff;
+  --sidebar-text-color: #0f0f0f;
+}
+
+:root {
+  --sidebar-width: 80px;        /* default collapsed width */
+}
+
+.sidebar-expanded {
+  --sidebar-width: 240px;       /* expanded width */
+}
+
+:root {
+  --sidebar-width: 80px;   /* COLLAPSED */
+}
+
+.sidebar-expanded {
+  --sidebar-width: 240px;  /* EXPANDED */
+}

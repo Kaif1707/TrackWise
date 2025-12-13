@@ -1,0 +1,170 @@
+/* src/components/SidebarDesktop.css
+   Compact sidebar — expand by sidebar hover OR when .tw-sidebar-open is present (set by component)
+*/
+
+/* VARIABLES */
+:root {
+  --sidebar-collapsed: 72px;
+  --sidebar-expanded: 240px;
+  --sidebar-bg: var(--sidebar-bg-color, rgba(19,24,30,1));
+  --sidebar-text: var(--sidebar-text-color, #e6eef8);
+  --sidebar-border: rgba(255,255,255,0.03);
+  --sidebar-shadow: 0 6px 20px rgba(0,0,0,0.45);
+  --transition-fast: 180ms cubic-bezier(.2,.9,.2,1);
+  --neon-accent: #4e9cff;
+}
+
+/* Base (collapsed by default) */
+.tw-sidebar-desktop {
+  box-sizing: border-box;
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100vh;
+  width: var(--sidebar-collapsed);
+  padding: 16px 10px;
+  padding-top: 56px; /* reserve for navbar height */
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  background: var(--sidebar-bg);
+  color: var(--sidebar-text);
+  border-right: 1px solid var(--sidebar-border);
+  box-shadow: var(--sidebar-shadow);
+  transition: width var(--transition-fast);
+  z-index: 60; /* above content but below navbar */
+}
+
+/* Expand ONLY when hovering the sidebar element OR when parent/global class indicates open */
+.tw-sidebar-desktop:hover,
+html.tw-sidebar-open .tw-sidebar-desktop {
+  width: var(--sidebar-expanded);
+}
+
+/* Brand */
+.sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px;
+  cursor: pointer;
+}
+.brand-mark {
+  width: 36px; height: 36px; border-radius: 8px;
+  display:flex; align-items:center; justify-content:center;
+  font-weight:700; background: rgba(255,255,255,0.03); color: var(--sidebar-text);
+}
+.brand-text {
+  font-weight:700;
+  font-size: 1rem;
+  white-space:nowrap;
+  opacity: 0;
+  transform: translateX(-6px);
+  transition: opacity var(--transition-fast), transform var(--transition-fast);
+}
+
+/* reveal on expand (sidebar hover OR html.tw-sidebar-open) */
+.tw-sidebar-desktop:hover .brand-text,
+html.tw-sidebar-open .tw-sidebar-desktop .brand-text {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+/* Nav items */
+.sidebar-nav {
+  display:flex;
+  flex-direction:column;
+  gap: 8px;
+  margin-top: 18px;
+}
+.sb-item {
+  display:flex;
+  align-items:center;
+  gap: 12px;
+  padding: 10px;
+  color: var(--sidebar-text);
+  text-decoration: none;
+  border-radius: 8px;
+  transition: background .12s ease, color .12s ease;
+  overflow: hidden;
+}
+.sb-item svg { opacity: 0.95; }
+
+/* text hidden when collapsed */
+.sb-text {
+  opacity: 0;
+  transform: translateX(-6px);
+  transition: opacity var(--transition-fast), transform var(--transition-fast);
+}
+
+/* reveal text on expand */
+.tw-sidebar-desktop:hover .sb-text,
+html.tw-sidebar-open .tw-sidebar-desktop .sb-text {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+/* active + hover */
+.sb-item.active {
+  background: linear-gradient(90deg, rgba(78,156,255,0.08), transparent);
+  color: var(--neon-accent);
+}
+.sb-item:hover {
+  background: rgba(255,255,255,0.04);
+}
+
+/* Footer */
+.sidebar-footer {
+  margin-top: auto;
+  display:flex;
+  flex-direction:column;
+  gap: 12px;
+  padding-bottom: 12px;
+}
+.profile {
+  display:flex;
+  gap: 10px;
+  align-items:center;
+}
+.avatar { width:36px; height:36px; border-radius:8px; display:flex; align-items:center; justify-content:center; background: rgba(255,255,255,0.02); color: var(--sidebar-text); }
+.meta { opacity: 0; transform: translateX(-6px); transition: opacity var(--transition-fast), transform var(--transition-fast); }
+
+/* reveal meta when expanded */
+.tw-sidebar-desktop:hover .meta,
+html.tw-sidebar-open .tw-sidebar-desktop .meta {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+/* logout button */
+.sb-logout {
+  display:flex;
+  gap:8px;
+  align-items:center;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: var(--sidebar-text);
+  opacity: 0;
+  transform: translateX(-6px);
+  transition: opacity var(--transition-fast), transform var(--transition-fast);
+}
+
+/* show logout when expanded */
+.tw-sidebar-desktop:hover .sb-logout,
+html.tw-sidebar-open .tw-sidebar-desktop .sb-logout {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.sb-logout:hover { background: rgba(255,255,255,0.04); }
+
+/* Prevent horizontal scrollbar caused by sidebar */
+html, body, #root { overflow-x: hidden; }
+
+/* Hide desktop sidebar on mobile */
+@media (max-width: 768px) {
+  .tw-sidebar-desktop { display: none; }
+}

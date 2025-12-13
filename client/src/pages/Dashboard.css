@@ -1,0 +1,260 @@
+:root {
+  --glass-bg: rgba(18,22,28,0.55);
+  --glass-border: rgba(255,255,255,0.04);
+  --neon: rgba(78,156,255,0.16);
+  --neon-accent: #4e9cff;
+  --card-radius: 28px;
+}
+
+/* -------------------------------
+   DASHBOARD GRID
+--------------------------------*/
+.tw-dashboard-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  padding: 24px 28px;
+  width: 100%;
+  box-sizing: border-box;
+  margin-top: 72px; /* Fix navbar overlap */
+}
+
+/* -------------------------------
+   HEADER
+--------------------------------*/
+.tw-dashboard-header {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.page-title {
+  color: var(--text);
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.page-sub {
+  color: var(--text);
+  opacity: 0.7;
+  font-size: 0.95rem;
+}
+
+/* -------------------------------
+   TOP CARDS GRID
+--------------------------------*/
+.cards-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 18px;
+}
+
+/* -------------------------------
+   GLASS CARD
+--------------------------------*/
+.glass-card {
+  background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.015));
+  border: 1px solid var(--glass-border);
+  border-radius: var(--card-radius);
+  padding: 18px;
+  color: var(--text);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.45);
+  backdrop-filter: blur(14px) saturate(140%);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+  transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+  overflow: hidden;
+}
+
+.card-large {
+  grid-column: span 2;
+  min-height: 120px;
+}
+
+.card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.card-title {
+  font-size: 0.95rem;
+  opacity: 0.95;
+  font-weight: 600;
+}
+
+.card-value {
+  font-size: 1.6rem;
+  font-weight: 700;
+  margin-top: 8px;
+}
+
+.card-value.accent {
+  color: var(--neon-accent);
+}
+
+/* meta info */
+.card-meta {
+  display: flex;
+  gap: 12px;
+  margin-top: 12px;
+  font-size: 0.9rem;
+  opacity: 0.85;
+}
+
+.meta-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.meta-item.positive {
+  color: #7EE787;
+}
+
+.glass-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(78,156,255,0.22);
+  box-shadow: 0 18px 45px rgba(0,0,0,0.55);
+}
+
+/* -------------------------------
+   PERFORMANCE SECTION
+--------------------------------*/
+.performance-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 18px;
+}
+
+.performance-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 18px;
+  min-height: 300px;
+}
+
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.panel-title {
+  font-weight: 700;
+}
+
+.panel-sub {
+  opacity: 0.7;
+  font-size: 0.9rem;
+}
+
+.chart-area {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* -------------------------------
+   INSIGHTS
+--------------------------------*/
+.insights-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 18px;
+}
+
+.insights-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  opacity: 0.9;
+}
+
+.asset-snapshot {
+  margin-top: 8px;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.asset-snapshot img {
+  width: 64px;
+  height: 64px;
+  border-radius: 12px;
+  object-fit: cover;
+  border: 1px solid rgba(255,255,255,0.04);
+}
+
+.asset-text {
+  opacity: 0.75;
+}
+
+/* -------------------------------
+   HOLDINGS PANEL
+--------------------------------*/
+.holdings-panel {
+  padding: 22px;
+  margin-top: 10px;
+}
+
+.holdings-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.holdings-title {
+  font-size: 1.35rem;
+  font-weight: 600;
+}
+
+.add-asset-btn {
+  background: var(--neon-accent);
+  color: white;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.15s ease;
+}
+
+.add-asset-btn:hover {
+  transform: translateY(-2px);
+  opacity: 0.9;
+}
+
+/* -------------------------------
+   RESPONSIVE
+--------------------------------*/
+@media (max-width: 1100px) {
+  .cards-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .card-large {
+    grid-column: span 2;
+  }
+  .performance-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 600px) {
+  .tw-dashboard-grid {
+    padding: 20px 16px;
+  }
+  .cards-row {
+    grid-template-columns: 1fr;
+  }
+  .glass-card {
+    padding: 14px;
+  }
+}

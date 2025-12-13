@@ -1,0 +1,78 @@
+.tw-navbar {
+  position: fixed;
+  top: 0;
+  height: 60px;
+  background: rgba(18, 22, 28, 0.6);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 24px;
+  z-index: 999;
+  transition: left 250ms ease, width 250ms ease;
+}
+
+/* PROFILE */
+/* Right section container */
+.nav-right {
+  display: flex;
+  align-items: center;
+
+  max-width: 260px;      /* total allowed space */
+  width: 260px;          /* FIXED width so nothing escapes */
+  overflow: hidden;
+}
+
+/* Profile wrapper */
+.nav-profile {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  overflow: hidden;
+  width: 100%;
+}
+
+/* Avatar */
+.nav-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: var(--neon-accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+/* Text container */
+.nav-user-text {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  width: 100%;
+}
+
+/* Name */
+.nav-name {
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--text);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* Email */
+.nav-email {
+  font-size: 0.75rem;
+  opacity: 0.7;
+  color: var(--text);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+
+  max-width: 100%;       /* FULL width allowed */
+}

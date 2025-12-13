@@ -1,0 +1,64 @@
+/* ---------------------------
+   CORE LAYOUT STRUCTURE
+---------------------------- */
+
+html, body, #root {
+  width: 100%;
+  height: 100%;
+  overflow-x: hidden;
+  margin: 0;
+  padding: 0;
+}
+
+.tw-app-layout {
+  display: flex;
+  width: 100%;
+  min-height: 100vh;
+  background: var(--background);
+}
+
+/* MAIN CONTENT */
+.tw-main-content {
+  flex: 1;
+  min-height: 100vh;
+  padding: 20px;
+  padding-top: 80px;
+  box-sizing: border-box;
+  overflow-y: auto;
+  transition: margin-left 250ms ease;
+  position: relative;
+}
+
+/* Collapsed sidebar – 72px */
+.tw-sidebar-collapsed .tw-main-content {
+  margin-left: 72px;
+}
+
+/* Expanded sidebar – 240px */
+.tw-sidebar-open .tw-main-content {
+  margin-left: 240px;
+}
+
+/* NAVBAR SHIFT */
+.tw-sidebar-collapsed .tw-navbar {
+  left: 72px !important;
+  width: calc(100% - 72px) !important;
+}
+
+.tw-sidebar-open .tw-navbar {
+  left: 240px !important;
+  width: calc(100% - 240px) !important;
+}
+
+/* ---------------------------
+   RESPONSIVE
+---------------------------- */
+@media (max-width: 768px) {
+  .tw-main-content {
+    margin-left: 0 !important;
+  }
+  .tw-navbar {
+    left: 0 !important;
+    width: 100% !important;
+  }
+}

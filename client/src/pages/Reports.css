@@ -1,0 +1,136 @@
+.reports-page {
+  padding: 24px 28px;
+  margin-top: 72px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.reports-header h1 {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.subtitle {
+  opacity: 0.7;
+  margin-top: 4px;
+  font-size: 0.95rem;
+}
+
+/* FILTER BUTTONS */
+.report-filter {
+  display: flex;
+  gap: 12px;
+  padding: 14px;
+}
+
+.report-filter button {
+  padding: 8px 16px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.03);
+  color: var(--text);
+  cursor: pointer;
+  transition: 0.18s;
+}
+
+.report-filter button.active {
+  background: var(--neon-accent);
+  border-color: var(--neon-accent);
+  color: #fff;
+}
+
+/* SUMMARY CARDS */
+.report-cards {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 16px;
+}
+
+.rep-card h3 {
+  opacity: 0.8;
+  font-size: 0.9rem;
+}
+
+.number {
+  font-size: 1.6rem;
+  font-weight: 700;
+  margin-top: 6px;
+}
+
+.number.positive {
+  color: #7EE787;
+}
+
+.number.negative {
+  color: #FF7B7B;
+}
+
+/* CHARTS */
+.charts-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 22px;
+}
+
+.chart-box {
+  padding: 18px;
+}
+
+.chart-box h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  font-weight: 600;
+}
+
+/* DOWNLOAD SECTION */
+.download-row {
+  padding: 18px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.download-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.download-btn {
+  padding: 8px 14px;
+  background: var(--neon-accent);
+  color: white;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  transition: 0.2s;
+}
+
+.download-btn:hover {
+  opacity: 0.9;
+}
+
+/* RESPONSIVE */
+@media (max-width: 1100px) {
+  .report-cards {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 800px) {
+  .charts-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 600px) {
+  .report-cards {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}

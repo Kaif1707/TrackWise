@@ -1,0 +1,325 @@
+/* HoldingsTable.css - fits dark glass theme (improved) */
+
+.holdings-table-panel {
+  width: 100%;
+  border-radius: 16px;
+  padding: 14px;
+  box-sizing: border-box;
+  background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+  border: 1px solid rgba(255,255,255,0.03);
+  backdrop-filter: blur(12px) saturate(140%);
+  -webkit-backdrop-filter: blur(12px) saturate(140%);
+  color: var(--text);
+}
+
+/* header */
+.ht-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.ht-title {
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+.ht-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.ht-search {
+  padding: 8px 10px;
+  background: rgba(255,255,255,0.02);
+  border: 1px solid rgba(255,255,255,0.03);
+  border-radius: 8px;
+  color: var(--text);
+  outline: none;
+  width: 220px;
+}
+
+/* keyboard-visible focus */
+.ht-search:focus {
+  box-shadow: 0 6px 16px rgba(78,156,255,0.08);
+  border-color: var(--neon-accent);
+}
+
+/* total */
+.ht-total {
+  font-weight: 700;
+  color: var(--text);
+  opacity: 0.9;
+}
+
+/* table wrapper (scroll x on small screens) */
+.ht-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* table */
+.ht-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 760px; /* slightly reduced from 880 for better responsiveness */
+  transition: background .12s ease;
+}
+
+/* table header cells (sortable) */
+.ht-table thead th {
+  text-align: left;
+  font-size: 0.85rem;
+  padding: 10px 12px;
+  color: var(--text);
+  opacity: 0.85;
+  cursor: pointer;
+  user-select: none;
+  position: relative;
+  white-space: nowrap;
+}
+
+/* optional: add small caret indicator via CSS (you can enhance later) */
+.ht-table thead th::after {
+  content: "";
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-left: 8px;
+  vertical-align: middle;
+  opacity: 0.25;
+  transform: translateY(-1px);
+}
+
+/* header focus for keyboard users */
+.ht-table thead th:focus {
+  outline: none;
+  box-shadow: 0 6px 18px rgba(78,156,255,0.06);
+  border-radius: 6px;
+}
+
+/* table body cells */
+.ht-table tbody td {
+  padding: 12px;
+  border-top: 1px solid rgba(255,255,255,0.02);
+  vertical-align: middle;
+  font-size: 0.95rem;
+}
+
+/* subtle alternating row background for readability */
+.ht-table tbody tr:nth-child(odd) {
+  background: rgba(255,255,255,0.004);
+}
+
+/* highlight row on hover or focus-within (keyboard nav) */
+.ht-table tbody tr:hover,
+.ht-table tbody tr:focus-within {
+  background: linear-gradient(90deg, rgba(78,156,255,0.02), rgba(255,255,255,0.01));
+  transform: translateZ(0);
+}
+
+/* symbol cell layout */
+.td-symbol {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.symbol-thumb {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  object-fit: cover;
+  border: 1px solid rgba(255,255,255,0.03);
+}
+
+/* name labels */
+.symbol-labels .sym {
+  font-weight: 700;
+}
+
+.symbol-labels .sym-sub {
+  font-size: 0.82rem;
+  opacity: 0.7;
+  color: var(--text);
+}
+
+/* utility classes */
+.mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, "Roboto Mono", monospace;
+}
+
+/* profit/loss badges */
+.pl.pos { color: #7EE787; display:flex; gap:6px; align-items:center; }
+.pl.neg { color: #FF7B7B; display:flex; gap:6px; align-items:center; }
+
+/* sparkline */
+.sparkline { display:block; }
+
+/* footer */
+.ht-footer { margin-top: 10px; color: var(--text); opacity: 0.8; font-size:0.9rem; }
+
+/* small screens: responsive adjustments & stacked cards fallback */
+@media (max-width: 900px) {
+  .ht-search { width: 160px; }
+  .ht-table { min-width: 640px; }
+  .hide-on-mobile { display: none; }
+}
+
+/* On very small screens we'll transform rows into stacked cards for legibility */
+@media (max-width: 560px) {
+  .ht-table {
+    min-width: 100%;
+    border: 0;
+    display: block;
+  }
+
+  .ht-table thead {
+    display: none;
+  }
+
+  .ht-table tbody {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .ht-table tbody tr {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 8px 12px;
+    padding: 12px;
+    border-radius: 12px;
+    border: 1px solid rgba(255,255,255,0.02);
+    background: linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.005));
+  }
+
+  .ht-table tbody td {
+    display: block;
+    padding: 6px 0;
+    border-top: none;
+  }
+
+  .td-symbol { grid-column: 1 / -1; display:flex; align-items:center; gap:12px; }
+  .hide-on-mobile { display: none; }
+  .symbol-thumb { width: 40px; height: 40px; }
+}
+
+/* tiny devices */
+@media (max-width: 420px) {
+  .ht-search { width: 120px; font-size: 0.9rem; padding: 7px 8px; }
+  .symbol-thumb { width: 36px; height: 36px; }
+}
+
+/* helper: make clickable header show active sort (you can toggle class via JS) */
+.ht-table thead th.sort-asc::after {
+  content: "▲";
+  font-size: 0.55rem;
+  margin-left: 6px;
+  opacity: 0.75;
+}
+
+.ht-table thead th.sort-desc::after {
+  content: "▼";
+  font-size: 0.55rem;
+  margin-left: 6px;
+  opacity: 0.75;
+}
+
+/* -----------------------------------
+   ROW HOVER GLOW EFFECT
+------------------------------------*/
+.ht-table tbody tr {
+  transition: background 0.25s ease, transform 0.2s ease;
+}
+
+.ht-table tbody tr:hover {
+  background: rgba(78, 156, 255, 0.08); /* subtle neon-blue tint */
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(78, 156, 255, 0.20);
+}
+
+/* -----------------------------------
+   PREMIUM ROW HOVER EFFECT (NEON BAR)
+------------------------------------*/
+.ht-table tbody tr {
+  position: relative;
+  transition: background 0.25s ease, transform 0.20s ease;
+}
+
+.ht-table tbody tr::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  width: 0px;
+  background: var(--neon-accent);
+  border-radius: 0 6px 6px 0;
+  filter: drop-shadow(0 0 6px var(--neon-accent));
+  opacity: 0;
+  transition: width 0.25s ease, opacity 0.3s ease;
+}
+
+.ht-table tbody tr:hover {
+  background: rgba(78, 156, 255, 0.08);
+  transform: translateY(-2px);
+}
+
+.ht-table tbody tr:hover::before {
+  width: 4px;   /* neon bar thickness */
+  opacity: 1;
+}
+
+.action-btn {
+  background: transparent;
+  border: none;
+  padding: 6px;
+  border-radius: 6px;
+  color: var(--text);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.action-btn:hover { background: rgba(255,255,255,0.03); }
+.action-btn.danger:hover { background: rgba(255,80,80,0.08); }
+
+.ht-filters {
+  display: flex;
+  gap: 10px;
+  margin: 12px 0 18px;
+}
+
+.filter-btn {
+  padding: 6px 14px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  cursor: pointer;
+  color: var(--text);
+  font-size: 0.75rem;
+  transition: 0.2s;
+}
+
+.filter-btn.active {
+  background: var(--cat-color);
+  color: #000;
+  font-weight: 600;
+}
+
+.category-badge {
+  display: inline-block;
+  margin-top: 4px;
+  padding: 2px 6px;
+  border-radius: 6px;
+  font-size: 0.7rem;
+  color: #000;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
