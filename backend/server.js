@@ -4,7 +4,6 @@ import dotenv from "dotenv";
 import helmet from "helmet";
 import morgan from "morgan";
 import rateLimit from "express-rate-limit";
-import mongoSanitize from "express-mongo-sanitize";
 
 import connectDB from "./src/config/db.js";
 import assetRoutes from "./src/routes/assets.js";
@@ -58,8 +57,24 @@ app.use(
 // Body parser
 app.use(express.json({ limit: "10kb" }));
 
-// Data sanitization against NoSQL query injection
-app.use(mongoSanitize());
+// Express 5 compatible NoSQL Query Injection Sanitizer
+const sanitizeNoSQL = (obj) => {
+  if (!obj || typeof obj !== "object") return;
+  for (const key of Object.keys(obj)) {
+    if (key.startsWith("$") || key.includes(".")) {
+      delete obj[key];
+    } else if (typeof obj[key] === "object" && obj[key] !== null) {
+      sanitizeNoSQL(obj[key]);
+    }
+  }
+};
+
+app.use((req, res, next) => {
+  if (req.body) sanitizeNoSQL(req.body);
+  if (req.params) sanitizeNoSQL(req.params);
+  if (req.query) sanitizeNoSQL(req.query);
+  next();
+});
 
 // Connect MongoDB
 await connectDB();
