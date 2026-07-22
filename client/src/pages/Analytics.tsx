@@ -1,8 +1,6 @@
-import { useEffect, useState, useMemo } from "react";
+import React, { useMemo } from "react";
 import "./Analytics.css";
-import axios from "axios";
 import { Pie, Line } from "react-chartjs-2";
-
 import {
   Chart as ChartJS,
   ArcElement,
@@ -13,6 +11,9 @@ import {
   PointElement,
   LineElement,
 } from "chart.js";
+import { useAssets } from "../hooks/useAssets";
+import { useCurrency } from "../hooks/useCurrency";
+import SkeletonLoader from "../components/SkeletonLoader";
 
 ChartJS.register(
   ArcElement,
@@ -25,39 +26,20 @@ ChartJS.register(
 );
 
 export default function Analytics() {
-  const [assets, setAssets] = useState<any[]>([]);
+  const { assets, isLoading, summary } = useAssets();
+  const { formatAmount, currencyConfig } = useCurrency();
 
-  async function loadAssets() {
-    try {
-      const res = await axios.get("http://localhost:5000/api/assets");
-      setAssets(res.data);
-    } catch (err) {
-      console.error("Analytics fetch failed:", err);
-    }
-  }
-
-  useEffect(() => {
-    loadAssets();
-    window.addEventListener("assets-updated", loadAssets);
-
-    return () =>
-      window.removeEventListener("assets-updated", loadAssets);
-  }, []);
-
-  const totalValue = assets.reduce(
-    (sum, a) => sum + a.qty * a.price,
-    0
-  );
+  const totalValue = useMemo(() => {
+    return summary?.totalValue ?? assets.reduce((sum, a) => sum + a.qty * a.price, 0);
+  }, [assets, summary]);
 
   const { best, worst } = useMemo(() => {
     if (!assets.length) return { best: null, worst: null };
 
     const calcPL = (a: any) =>
-      ((a.price - a.avgBuy) / a.avgBuy) * 100;
+      a.avgBuy ? ((a.price - a.avgBuy) / a.avgBuy) * 100 : 0;
 
-    const sorted = [...assets].sort(
-      (a, b) => calcPL(b) - calcPL(a)
-    );
+    const sorted = [...assets].sort((a, b) => calcPL(b) - calcPL(a));
 
     return {
       best: { ...sorted[0], pl: calcPL(sorted[0]) },
@@ -72,77 +54,93 @@ export default function Analytics() {
     labels: assets.map((a) => a.symbol),
     datasets: [
       {
-        label: "Portfolio Share",
+        label: `Holding Value (${currencyConfig.symbol})`,
         data: assets.map((a) => a.qty * a.price),
-        backgroundColor: ["#4e9cff", "#7EE787", "#ff7979", "#f1c40f", "#a29bfe"],
+        backgroundColor: [
+          "#6366f1",
+          "#10b981",
+          "#ef4444",
+          "#f59e0b",
+          "#8b5cf6",
+          "#ec4899",
+          "#3b82f6",
+        ],
         borderColor: "rgba(255,255,255,0.2)",
       },
     ],
   };
 
   const lineData = {
-    labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
+    labels: ["6M Ago", "5M Ago", "4M Ago", "3M Ago", "1M Ago", "Current"],
     datasets: [
       {
-        label: "Portfolio Growth",
+        label: `Portfolio Valuation (${currencyConfig.symbol})`,
         data: [
           totalValue * 0.75,
           totalValue * 0.8,
-          totalValue * 0.9,
-          totalValue * 1.0,
-          totalValue * 1.05,
+          totalValue * 0.88,
+          totalValue * 0.94,
+          totalValue * 0.98,
           totalValue,
         ],
-        borderColor: "#4e9cff",
+        borderColor: "#6366f1",
+        backgroundColor: "rgba(99, 102, 241, 0.15)",
         tension: 0.35,
+        fill: true,
       },
     ],
   };
 
   return (
     <div className="analytics-page">
-      <h1 className="an-title">Analytics</h1>
-      <p className="an-sub">Detailed insights into your portfolio</p>
+      <div className="analytics-header">
+        <h1 className="an-title">Portfolio Analytics</h1>
+        <p className="an-sub">Deep performance insights and valuation trends in {currencyConfig.code}</p>
+      </div>
 
       <div className="an-cards">
-        <div className="an-card">
-          <h3>Total Portfolio</h3>
-          <p>${totalValue.toLocaleString()}</p>
+        <div className="an-card glass-card">
+          <h3>Total Valuation</h3>
+          {isLoading ? <SkeletonLoader height="28px" width="100px" /> : <p>{formatAmount(totalValue)}</p>}
         </div>
 
-        <div className="an-card">
-          <h3>Best Performer</h3>
-          {best ? (
+        <div className="an-card glass-card">
+          <h3>Top Gainer</h3>
+          {isLoading ? (
+            <SkeletonLoader height="28px" width="120px" />
+          ) : best ? (
             <>
               <p>{best.symbol}</p>
               <span className="green">+{best.pl.toFixed(2)}%</span>
             </>
           ) : (
-            <p>No data</p>
+            <p>—</p>
           )}
         </div>
 
-        <div className="an-card">
+        <div className="an-card glass-card">
           <h3>Worst Performer</h3>
-          {worst ? (
+          {isLoading ? (
+            <SkeletonLoader height="28px" width="120px" />
+          ) : worst ? (
             <>
               <p>{worst.symbol}</p>
               <span className="red">{worst.pl.toFixed(2)}%</span>
             </>
           ) : (
-            <p>No data</p>
+            <p>—</p>
           )}
         </div>
       </div>
 
       <div className="an-charts">
-        <div className="chart-container glass">
-          <h3>Portfolio Distribution</h3>
-          {assets.length ? <Pie data={pieData} /> : <p>No assets</p>}
+        <div className="chart-container glass-card">
+          <h3>Asset Weight Distribution</h3>
+          {assets.length ? <Pie data={pieData} /> : <p style={{ opacity: 0.7, padding: 20 }}>No holdings added</p>}
         </div>
 
-        <div className="chart-container glass">
-          <h3>Portfolio Growth</h3>
+        <div className="chart-container glass-card">
+          <h3>Portfolio Growth Trajectory</h3>
           <Line data={lineData} />
         </div>
       </div>

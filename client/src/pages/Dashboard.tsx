@@ -1,12 +1,13 @@
 import React, { useState, useMemo } from "react";
 import "./Dashboard.css";
 import PerformanceChart from "../components/PerformanceChart";
-import { ArrowUp, ArrowDown, TrendingUp, Clock } from "lucide-react";
+import { ArrowUp, ArrowDown, TrendingUp, Clock, Target, Star } from "lucide-react";
 import HoldingsTable from "../components/HoldingsTable";
 import AddAssetModal from "../components/AddAssetModal";
 import ModalPortal from "../components/ModalPortal";
 import SkeletonLoader from "../components/SkeletonLoader";
 import { useAssets } from "../hooks/useAssets";
+import { useCurrency } from "../hooks/useCurrency";
 
 function AnimatedNumber({ value, duration = 900 }: { value: number; duration?: number }) {
   const [display, setDisplay] = useState(0);
@@ -23,14 +24,21 @@ function AnimatedNumber({ value, duration = 900 }: { value: number; duration?: n
     };
 
     requestAnimationFrame(step);
-  }, [value]);
+  }, [value, duration]);
 
   return <span>{display.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</span>;
 }
 
 export default function Dashboard() {
   const { assets, isLoading, summary } = useAssets();
+  const { formatAmount, currencyConfig } = useCurrency();
   const [showModal, setShowModal] = useState(false);
+
+  // Target Goal Milestone from LocalStorage
+  const targetGoal = useMemo(() => {
+    const saved = localStorage.getItem("trackwise_target_goal");
+    return saved ? Number(saved) : 100000;
+  }, []);
 
   // Dynamic calculations memoized for performance
   const metrics = useMemo(() => {
@@ -52,6 +60,11 @@ export default function Dashboard() {
       liquidity: liq,
     };
   }, [assets, summary]);
+
+  const goalProgress = useMemo(() => {
+    const pct = Math.min(100, (metrics.totalValue / targetGoal) * 100);
+    return Math.max(0, pct);
+  }, [metrics.totalValue, targetGoal]);
 
   const insights = useMemo(() => {
     if (!assets || assets.length === 0) return null;
@@ -84,59 +97,128 @@ export default function Dashboard() {
     <>
       <section className="tw-dashboard-grid">
         <div className="tw-dashboard-header">
-          <div className="page-title">Overview</div>
-          <div className="page-sub">Real-time performance metrics and asset distribution</div>
+          <div>
+            <h1 className="page-title">Portfolio Overview</h1>
+            <p className="page-sub">Real-time performance metrics and asset distribution in {currencyConfig.code}</p>
+          </div>
         </div>
 
         {/* METRIC CARDS */}
         <div className="cards-row">
           <article className="glass-card card-large">
             <div className="card-top">
-              <div className="card-title">Total Portfolio Value</div>
+              <span className="card-title">Total Portfolio Value</span>
               <div className="card-icon"><TrendingUp size={18} /></div>
             </div>
             <div className="card-value">
-              {isLoading ? <SkeletonLoader height="36px" width="140px" /> : <>$<AnimatedNumber value={metrics.totalValue} /></>}
+              {isLoading ? (
+                <SkeletonLoader height="36px" width="140px" />
+              ) : (
+                formatAmount(metrics.totalValue)
+              )}
+            </div>
+            <div className="card-badge-row">
+              <span className={`badge-tag ${Number(insights?.totalReturn || 0) >= 0 ? "positive" : "negative"}`}>
+                {Number(insights?.totalReturn || 0) >= 0 ? "▲ +" : "▼ "}
+                {insights?.totalReturn || "0"}%
+              </span>
+              <span className="badge-sub">All-time portfolio return</span>
             </div>
           </article>
 
           <article className="glass-card">
             <div className="card-top">
-              <div className="card-title">Today's Profit</div>
+              <span className="card-title">Today's Profit / Loss</span>
               <div className="card-icon"><ArrowUp size={16} /></div>
             </div>
             <div className="card-value accent">
-              {isLoading ? <SkeletonLoader height="32px" width="100px" /> : <>$<AnimatedNumber value={metrics.todayProfit} /></>}
+              {isLoading ? (
+                <SkeletonLoader height="32px" width="100px" />
+              ) : (
+                formatAmount(metrics.todayProfit)
+              )}
+            </div>
+            <div className="card-badge-row">
+              <span className="badge-sub">Estimated 24h market move</span>
             </div>
           </article>
 
           <article className="glass-card">
             <div className="card-top">
-              <div className="card-title">Holdings</div>
+              <span className="card-title">Active Holdings</span>
               <div className="card-icon"><Clock size={16} /></div>
             </div>
             <div className="card-value">
-              {isLoading ? <SkeletonLoader height="32px" width="60px" /> : <AnimatedNumber value={metrics.holdingsCount} />}
+              {isLoading ? (
+                <SkeletonLoader height="32px" width="60px" />
+              ) : (
+                <AnimatedNumber value={metrics.holdingsCount} />
+              )}
+            </div>
+            <div className="card-badge-row">
+              <span className="badge-sub">Diversified across categories</span>
             </div>
           </article>
 
           <article className="glass-card">
             <div className="card-top">
-              <div className="card-title">Liquidity</div>
+              <span className="card-title">Liquidity Allocation</span>
               <div className="card-icon"><ArrowDown size={16} /></div>
             </div>
             <div className="card-value">
-              {isLoading ? <SkeletonLoader height="32px" width="100px" /> : <>$<AnimatedNumber value={metrics.liquidity} /></>}
+              {isLoading ? (
+                <SkeletonLoader height="32px" width="100px" />
+              ) : (
+                formatAmount(metrics.liquidity)
+              )}
+            </div>
+            <div className="card-badge-row">
+              <span className="badge-sub">Cash buffer & reserve</span>
             </div>
           </article>
+        </div>
+
+        {/* PORTFOLIO GOAL MILESTONE WIDGET */}
+        <div className="glass-card goal-widget-card" style={{ padding: "20px 24px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+              <div className="card-icon" style={{ background: "rgba(16, 185, 129, 0.12)", color: "var(--success)" }}>
+                <Target size={18} />
+              </div>
+              <div>
+                <h3 style={{ fontSize: "1rem", fontWeight: 700, color: "var(--text-primary)" }}>
+                  Portfolio Milestone Goal Progress
+                </h3>
+                <p style={{ fontSize: "0.82rem", color: "var(--text-muted)" }}>
+                  Target Goal: {formatAmount(targetGoal)}
+                </p>
+              </div>
+            </div>
+            <div style={{ textAlign: "right" }}>
+              <span style={{ fontSize: "1.1rem", fontWeight: 800, color: "var(--success)" }}>
+                {goalProgress.toFixed(1)}% Completed
+              </span>
+            </div>
+          </div>
+          <div style={{ width: "100%", height: "10px", background: "rgba(255, 255, 255, 0.08)", borderRadius: "999px", overflow: "hidden" }}>
+            <div
+              style={{
+                width: `${goalProgress}%`,
+                height: "100%",
+                background: "var(--accent-gradient)",
+                borderRadius: "999px",
+                transition: "width 0.6s ease",
+              }}
+            />
+          </div>
         </div>
 
         {/* PERFORMANCE + INSIGHTS */}
         <div className="performance-row">
           <div className="performance-panel glass-card large-panel">
             <div className="panel-header">
-              <div className="panel-title">Portfolio Performance</div>
-              <div className="panel-sub">Historical trend snapshot</div>
+              <div className="panel-title">Portfolio Historical Trend</div>
+              <div className="panel-sub">30-Day Value trajectory</div>
             </div>
             <div className="chart-area">
               <PerformanceChart assets={assets} />
@@ -145,44 +227,48 @@ export default function Dashboard() {
 
           {/* DYNAMIC QUICK INSIGHTS */}
           <aside className="insights-panel glass-card small-panel">
-            <div className="panel-title">Quick Insights</div>
+            <div className="panel-title">Asset Rank Insights</div>
 
             {isLoading ? (
               <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginTop: "12px" }}>
-                <SkeletonLoader height="20px" />
-                <SkeletonLoader height="20px" />
-                <SkeletonLoader height="20px" />
+                <SkeletonLoader height="24px" />
+                <SkeletonLoader height="24px" />
+                <SkeletonLoader height="24px" />
               </div>
             ) : !insights ? (
               <p style={{ opacity: 0.7, marginTop: 12 }}>Add assets to view real-time portfolio insights</p>
             ) : (
-              <ul className="insights-list">
-                <li>
-                  Top gainer: <strong>{insights.topGainer.symbol}</strong>{" "}
-                  <span className="positive">
-                    (+{insights.topGainerPct.toFixed(2)}%)
-                  </span>
-                </li>
+              <div className="insights-list">
+                <div className="insights-item">
+                  <div className="insights-item-left">
+                    <div className="insights-rank-badge gainer">#1</div>
+                    <span className="insights-label">Top Gainer</span>
+                  </div>
+                  <div className="insights-value positive">
+                    {insights.topGainer.symbol} (+{insights.topGainerPct.toFixed(2)}%)
+                  </div>
+                </div>
 
-                <li>
-                  Top loser: <strong>{insights.topLoser.symbol}</strong>{" "}
-                  <span className="negative">
-                    {insights.topLoserPct.toFixed(2)}%
-                  </span>
-                </li>
+                <div className="insights-item">
+                  <div className="insights-item-left">
+                    <div className="insights-rank-badge loser">#L</div>
+                    <span className="insights-label">Top Loser</span>
+                  </div>
+                  <div className="insights-value negative">
+                    {insights.topLoser.symbol} ({insights.topLoserPct.toFixed(2)}%)
+                  </div>
+                </div>
 
-                <li>
-                  Portfolio return:{" "}
-                  <strong
-                    className={
-                      Number(insights.totalReturn) >= 0 ? "positive" : "negative"
-                    }
-                  >
+                <div className="insights-item">
+                  <div className="insights-item-left">
+                    <span className="insights-label">Total Return</span>
+                  </div>
+                  <div className={`insights-value ${Number(insights.totalReturn) >= 0 ? "positive" : "negative"}`}>
                     {Number(insights.totalReturn) >= 0 ? "+" : ""}
                     {insights.totalReturn}%
-                  </strong>
-                </li>
-              </ul>
+                  </div>
+                </div>
+              </div>
             )}
           </aside>
         </div>

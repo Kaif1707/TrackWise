@@ -13,6 +13,7 @@ import {
 import { Pie, Bar } from "react-chartjs-2";
 import jsPDF from "jspdf";
 import { useAssets } from "../hooks/useAssets";
+import { useCurrency } from "../hooks/useCurrency";
 import { IAsset } from "../types";
 import SkeletonLoader from "../components/SkeletonLoader";
 
@@ -27,10 +28,10 @@ ChartJS.register(
 
 /* ---------------- EXPORT HELPERS ---------------- */
 
-function downloadCSV(assets: IAsset[]) {
+function downloadCSV(assets: IAsset[], currencySymbol: string) {
   if (!assets.length) return;
 
-  const header = "Symbol,Name,Qty,Avg Buy,LTP,Value,P/L (%)\n";
+  const header = `Symbol,Name,Qty,Avg Buy (${currencySymbol}),LTP (${currencySymbol}),Value (${currencySymbol}),P/L (%)\n`;
   const rows = assets
     .map((a) => {
       const value = a.qty * a.price;
@@ -52,12 +53,12 @@ function downloadCSV(assets: IAsset[]) {
   URL.revokeObjectURL(url);
 }
 
-function downloadPDF(assets: IAsset[]) {
+function downloadPDF(assets: IAsset[], currencySymbol: string) {
   const doc = new jsPDF();
   let y = 16;
 
   doc.setFontSize(18);
-  doc.text("TrackWise Portfolio Analytics Report", 14, y);
+  doc.text("TrackWise Executive Portfolio Report", 14, y);
   y += 8;
   doc.setFontSize(10);
   doc.text(`Generated: ${new Date().toLocaleString()}`, 14, y);
@@ -70,7 +71,7 @@ function downloadPDF(assets: IAsset[]) {
     const pl = a.avgBuy ? ((a.price - a.avgBuy) / a.avgBuy) * 100 : 0;
 
     doc.text(
-      `${idx + 1}. ${a.symbol} (${a.name}) | Qty: ${a.qty} | LTP: $${a.price} | Val: $${value.toFixed(
+      `${idx + 1}. ${a.symbol} (${a.name}) | Qty: ${a.qty} | LTP: ${currencySymbol}${a.price} | Val: ${currencySymbol}${value.toFixed(
         2
       )} | P/L: ${pl.toFixed(2)}%`,
       14,
@@ -91,6 +92,7 @@ function downloadPDF(assets: IAsset[]) {
 
 export default function Reports() {
   const { assets, isLoading } = useAssets();
+  const { formatAmount, currencyConfig } = useCurrency();
   const [range, setRange] = useState("monthly");
 
   /* ---------------- STATS ---------------- */
@@ -177,10 +179,10 @@ export default function Reports() {
     labels: assets.length > 0 ? assets.map((a) => a.symbol) : ["No Data"],
     datasets: [
       {
-        label: "Unrealized P/L ($)",
+        label: `Unrealized P/L (${currencyConfig.symbol})`,
         data: assets.length > 0 ? assets.map((a) => a.qty * (a.price - a.avgBuy)) : [0],
         backgroundColor: assets.map((a) =>
-          a.price >= a.avgBuy ? "rgba(126, 231, 135, 0.8)" : "rgba(255, 123, 123, 0.8)"
+          a.price >= a.avgBuy ? "rgba(16, 185, 129, 0.8)" : "rgba(239, 68, 68, 0.8)"
         ),
       },
     ],
@@ -189,8 +191,8 @@ export default function Reports() {
   return (
     <section className="reports-page">
       <div className="reports-header">
-        <h1>Reports & Insights</h1>
-        <p className="subtitle">Deep financial analysis and portfolio reporting</p>
+        <h1>Executive Reports & Statements</h1>
+        <p className="subtitle">Comprehensive portfolio metrics & exportable statements in {currencyConfig.code}</p>
       </div>
 
       <div className="report-filter glass-card">
@@ -222,7 +224,7 @@ export default function Reports() {
           {isLoading ? (
             <SkeletonLoader height="28px" width="100px" />
           ) : (
-            <p className="number">${stats.invested.toLocaleString()}</p>
+            <p className="number">{formatAmount(stats.invested)}</p>
           )}
         </div>
 
@@ -231,7 +233,7 @@ export default function Reports() {
           {isLoading ? (
             <SkeletonLoader height="28px" width="100px" />
           ) : (
-            <p className="number">${stats.current.toLocaleString()}</p>
+            <p className="number">{formatAmount(stats.current)}</p>
           )}
         </div>
 
@@ -272,7 +274,7 @@ export default function Reports() {
 
         <div className="glass-card chart-box">
           <h3>
-            <BarChart3 size={18} /> Asset Profit/Loss Breakdown
+            <BarChart3 size={18} /> Asset Profit/Loss Breakdown ({currencyConfig.symbol})
           </h3>
           <Bar data={barData} />
         </div>
@@ -280,13 +282,13 @@ export default function Reports() {
 
       <div className="download-row glass-card">
         <h3>
-          <Calendar size={18} /> Export Portfolio Statements
+          <Calendar size={18} /> Export Statements & Spreadsheets
         </h3>
         <div className="download-actions">
-          <button className="download-btn" onClick={() => downloadCSV(assets)} disabled={assets.length === 0}>
+          <button className="download-btn" onClick={() => downloadCSV(assets, currencyConfig.symbol)} disabled={assets.length === 0}>
             <Download size={16} /> Download CSV
           </button>
-          <button className="download-btn" onClick={() => downloadPDF(assets)} disabled={assets.length === 0}>
+          <button className="download-btn" onClick={() => downloadPDF(assets, currencyConfig.symbol)} disabled={assets.length === 0}>
             <Download size={16} /> Download PDF
           </button>
         </div>

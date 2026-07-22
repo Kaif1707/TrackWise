@@ -5,21 +5,25 @@ import {
   ArrowDownRight,
   Edit2,
   Trash2,
-  Filter,
+  Star,
 } from "lucide-react";
 import AddAssetModal from "./AddAssetModal";
 import SkeletonLoader from "./SkeletonLoader";
 import { useAssets } from "../hooks/useAssets";
-import { IAsset, AssetCategory } from "../types";
+import { useCurrency } from "../hooks/useCurrency";
+import { IAsset } from "../types";
 
 export default function HoldingsTable({
   initialSort = { key: "value", dir: "desc" as "asc" | "desc" },
 }: {
   initialSort?: { key: string; dir: "asc" | "desc" };
 }) {
-  const { assets, isLoading, removeAsset } = useAssets();
+  const { assets, isLoading, removeAsset, editAsset } = useAssets();
+  const { formatAmount } = useCurrency();
+
   const [q, setQ] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [watchlistOnly, setWatchlistOnly] = useState<boolean>(false);
   const [sortKey, setSortKey] = useState(initialSort.key);
   const [sortDir, setSortDir] = useState<"asc" | "desc">(initialSort.dir);
 
@@ -30,6 +34,11 @@ export default function HoldingsTable({
     if (!id) return;
     if (!window.confirm("Are you sure you want to delete this asset from your portfolio?")) return;
     await removeAsset(id);
+  }
+
+  async function toggleWatchlist(asset: IAsset) {
+    if (!asset._id) return;
+    await editAsset(asset._id, { isWatchlist: !asset.isWatchlist });
   }
 
   function handleEdit(asset: IAsset) {
@@ -60,7 +69,8 @@ export default function HoldingsTable({
         r.name.toLowerCase().includes(ql);
       const matchesCategory =
         selectedCategory === "all" || r.category === selectedCategory;
-      return matchesSearch && matchesCategory;
+      const matchesWatchlist = !watchlistOnly || r.isWatchlist;
+      return matchesSearch && matchesCategory && matchesWatchlist;
     });
 
     return filtered.sort((a, b) => {
@@ -72,16 +82,36 @@ export default function HoldingsTable({
 
       return sortDir === "asc" ? A - B : B - A;
     });
-  }, [assets, q, selectedCategory, sortKey, sortDir]);
+  }, [assets, q, selectedCategory, watchlistOnly, sortKey, sortDir]);
 
   const totalValue = rows.reduce((sum, r) => sum + r.value, 0);
 
   return (
     <div className="holdings-table-panel glass-card">
       <div className="ht-header">
-        <div className="ht-title">Holdings</div>
+        <div className="ht-title">Holdings Overview</div>
 
         <div className="ht-actions" style={{ gap: "12px", alignItems: "center" }}>
+          {/* Watchlist Filter Toggle */}
+          <button
+            className={`action-btn ${watchlistOnly ? "active" : ""}`}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+              padding: "9px 14px",
+              borderRadius: "12px",
+              background: watchlistOnly ? "rgba(245, 158, 11, 0.15)" : undefined,
+              borderColor: watchlistOnly ? "var(--warning)" : undefined,
+              color: watchlistOnly ? "var(--warning)" : undefined,
+            }}
+            onClick={() => setWatchlistOnly((prev) => !prev)}
+            title="Toggle Watchlist Only"
+          >
+            <Star size={16} fill={watchlistOnly ? "var(--warning)" : "none"} />
+            <span style={{ fontSize: "0.85rem", fontWeight: 700 }}>Watchlist Only</span>
+          </button>
+
           {/* Category Filter */}
           <select
             className="ht-search"
@@ -103,7 +133,7 @@ export default function HoldingsTable({
             value={q}
             onChange={(e) => setQ(e.target.value)}
           />
-          <div className="ht-total">Filtered Total: ${totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+          <div className="ht-total">Filtered Total: {formatAmount(totalValue)}</div>
         </div>
       </div>
 
@@ -111,6 +141,7 @@ export default function HoldingsTable({
         <table className="ht-table">
           <thead>
             <tr>
+              <th style={{ width: "40px" }}></th>
               <th onClick={() => toggleSort("symbol")} style={{ cursor: "pointer" }}>
                 Symbol {sortKey === "symbol" ? (sortDir === "asc" ? "▲" : "▼") : ""}
               </th>
@@ -139,7 +170,7 @@ export default function HoldingsTable({
             {isLoading ? (
               Array.from({ length: 4 }).map((_, idx) => (
                 <tr key={idx}>
-                  <td colSpan={9} style={{ padding: "12px 24px" }}>
+                  <td colSpan={10} style={{ padding: "12px 24px" }}>
                     <SkeletonLoader height="28px" />
                   </td>
                 </tr>
@@ -147,6 +178,21 @@ export default function HoldingsTable({
             ) : rows.length > 0 ? (
               rows.map((r) => (
                 <tr key={r._id}>
+                  <td>
+                    <button
+                      className="action-btn"
+                      style={{ border: "none", padding: "4px" }}
+                      onClick={() => toggleWatchlist(r)}
+                      title={r.isWatchlist ? "Remove from Watchlist" : "Add to Watchlist"}
+                    >
+                      <Star
+                        size={16}
+                        color={r.isWatchlist ? "var(--warning)" : "var(--text-muted)"}
+                        fill={r.isWatchlist ? "var(--warning)" : "none"}
+                      />
+                    </button>
+                  </td>
+
                   <td className="td-symbol">
                     {r.img ? (
                       <img src={r.img} className="symbol-thumb" alt={r.symbol} />
@@ -161,8 +207,8 @@ export default function HoldingsTable({
 
                   <td>{r.name}</td>
                   <td>{r.qty}</td>
-                  <td>${r.avgBuy.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                  <td>${r.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                  <td>{formatAmount(r.avgBuy)}</td>
+                  <td>{formatAmount(r.price)}</td>
 
                   <td>
                     <div className={`pl ${r.plPct >= 0 ? "pos" : "neg"}`}>
@@ -175,13 +221,13 @@ export default function HoldingsTable({
                     </div>
                   </td>
 
-                  <td>${r.value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                  <td>{formatAmount(r.value)}</td>
 
                   <td>
                     <svg width={80} height={28}>
                       <polyline
                         fill="none"
-                        stroke={r.plPct >= 0 ? "#7EE787" : "#FF7B7B"}
+                        stroke={r.plPct >= 0 ? "var(--success)" : "var(--danger)"}
                         strokeWidth={2}
                         points={(r.trend || [r.avgBuy, r.price])
                           .map((v, i) => `${i * 15},${28 - (v / (r.price || 1)) * 20}`)
@@ -211,7 +257,7 @@ export default function HoldingsTable({
               ))
             ) : (
               <tr>
-                <td colSpan={9} style={{ padding: 32, textAlign: "center", opacity: 0.7 }}>
+                <td colSpan={10} style={{ padding: 32, textAlign: "center", opacity: 0.7 }}>
                   No asset holdings found matching criteria. Click <strong>+ Add Asset</strong> to start tracking!
                 </td>
               </tr>
