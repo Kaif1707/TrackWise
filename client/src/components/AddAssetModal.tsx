@@ -1,28 +1,18 @@
-// src/components/AddAssetModal.tsx
 import React, { useEffect, useRef, useState } from "react";
-import axios from "axios";
 import { fetchCryptoPriceUSD } from "../api/crypto";
+import { useAssets } from "../hooks/useAssets";
+import { IAsset, AssetCategory } from "../types";
 import "./AddAssetModal.css";
-
-type AssetShape = {
-  _id?: string;
-  symbol: string;
-  name: string;
-  qty: number;
-  avgBuy: number;
-  price: number;
-  trend: number[];
-  img?: string;
-  category: "stock" | "crypto" | "commodity" | "property";
-};
 
 export default function AddAssetModal({
   initial,
   close,
 }: {
-  initial?: Partial<AssetShape>;
+  initial?: Partial<IAsset>;
   close: () => void;
 }) {
+  const { addAsset, editAsset } = useAssets();
+
   const [form, setForm] = useState({
     symbol: initial?.symbol ?? "",
     name: initial?.name ?? "",
@@ -34,6 +24,8 @@ export default function AddAssetModal({
   });
 
   const [loadingPrice, setLoadingPrice] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const firstInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => firstInputRef.current?.focus(), []);
@@ -48,11 +40,8 @@ export default function AddAssetModal({
     setForm((prev) => ({ ...prev, [key]: value }));
   }
 
-  // -------------------------------------------------------------
-  // 🔥 AUTO FETCH LOGIC ONLY IF PRICE EMPTY
-  // -------------------------------------------------------------
   async function getLivePrice(symbol: string, category: string) {
-    if (form.price.trim() !== "") return Number(form.price); // already entered
+    if (form.price.trim() !== "") return Number(form.price);
 
     let fetched = null;
 
@@ -77,57 +66,55 @@ export default function AddAssetModal({
     return fetched ?? null;
   }
 
-  // -------------------------------------------------------------
-  // 🔥 SUBMIT (ADD or EDIT)
-  // -------------------------------------------------------------
-  async function handleSubmit() {
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+
     const symbol = form.symbol.trim().toUpperCase();
     const name = form.name.trim() || symbol;
     const qty = Number(form.qty);
     const avgBuy = Number(form.avgBuy);
     let price = Number(form.price);
-    const category = form.category as AssetShape["category"];
+    const category = form.category as AssetCategory;
 
-    // Fetch live price if needed
-    const auto = await getLivePrice(symbol, category);
-    if (auto && auto > 0) price = auto;
-
-    if (!price || price <= 0) price = avgBuy;
-
-    // Build trend
-    const trend = initial?.trend
-      ? [...initial.trend.slice(-5), price] // extend existing trend
-      : Array(5).fill(avgBuy).concat([price]);
-
-    const asset: AssetShape = {
-      _id: form._id,
-      symbol,
-      name,
-      qty,
-      avgBuy,
-      price,
-      trend,
-      img: "/mnt/data/sample.png",
-      category,
-    };
-
-    try {
-      // UPDATE
-      if (asset._id) {
-        await axios.put(`http://localhost:5000/api/assets/${asset._id}`, asset);
-      }
-
-      // CREATE
-      else {
-        await axios.post("http://localhost:5000/api/assets", asset);
-      }
-
-      window.dispatchEvent(new Event("assets-updated"));
-    } catch (err) {
-      console.error("Save failed:", err);
+    if (!symbol) {
+      setError("Asset symbol is required");
+      return;
     }
 
-    close();
+    setSubmitting(true);
+    try {
+      const auto = await getLivePrice(symbol, category);
+      if (auto && auto > 0) price = auto;
+      if (!price || price <= 0) price = avgBuy;
+
+      const trend = initial?.trend
+        ? [...initial.trend.slice(-5), price]
+        : Array(5).fill(avgBuy).concat([price]);
+
+      const payload = {
+        symbol,
+        name,
+        qty,
+        avgBuy,
+        price,
+        trend,
+        category,
+        img: initial?.img || "",
+      };
+
+      if (form._id) {
+        await editAsset(form._id, payload);
+      } else {
+        await addAsset(payload);
+      }
+
+      close();
+    } catch (err: any) {
+      setError(err.response?.data?.message || "Failed to save asset");
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   function handleBackdropClick(e: React.MouseEvent<HTMLDivElement>) {
@@ -139,70 +126,95 @@ export default function AddAssetModal({
       <div className="modal-box">
         <h2>{form._id ? "Edit Asset" : "Add Asset"}</h2>
 
-        <input
-          ref={firstInputRef}
-          placeholder="Symbol (e.g. BTC, AAPL)"
-          value={form.symbol}
-          onChange={(e) => update("symbol", e.target.value.toUpperCase())}
-        />
+        {error && <div className="auth-error" style={{ marginBottom: 12 }}>{error}</div>}
 
-        <input
-          placeholder="Name"
-          value={form.name}
-          onChange={(e) => update("name", e.target.value)}
-        />
-
-        <div style={{ display: "flex", gap: 8 }}>
+        <form onSubmit={handleSubmit}>
           <input
-            type="number"
-            placeholder="Quantity"
-            value={form.qty}
-            onChange={(e) => update("qty", e.target.value)}
+            ref={firstInputRef}
+            placeholder="Symbol (e.g. BTC, AAPL)"
+            value={form.symbol}
+            onChange={(e) => update("symbol", e.target.value.toUpperCase())}
+            disabled={submitting}
+            required
           />
+
           <input
-            type="number"
-            placeholder="Avg Buy"
-            value={form.avgBuy}
-            onChange={(e) => update("avgBuy", e.target.value)}
+            placeholder="Name"
+            value={form.name}
+            onChange={(e) => update("name", e.target.value)}
+            disabled={submitting}
+            required
           />
-        </div>
 
-        <input
-          type="number"
-          placeholder="Price (leave empty for auto)"
-          value={form.price}
-          onChange={(e) => update("price", e.target.value)}
-        />
-
-        {loadingPrice && (
-          <div style={{ opacity: 0.7, marginTop: -4, fontSize: "0.85rem" }}>
-            Fetching live price...
+          <div style={{ display: "flex", gap: 8 }}>
+            <input
+              type="number"
+              step="any"
+              min="0"
+              placeholder="Quantity"
+              value={form.qty}
+              onChange={(e) => update("qty", e.target.value)}
+              disabled={submitting}
+              required
+            />
+            <input
+              type="number"
+              step="any"
+              min="0"
+              placeholder="Avg Buy"
+              value={form.avgBuy}
+              onChange={(e) => update("avgBuy", e.target.value)}
+              disabled={submitting}
+              required
+            />
           </div>
-        )}
 
-        <label style={{ marginTop: 6, display: "block" }}>
-          Category:
-          <select
-            value={form.category}
-            onChange={(e) => update("category", e.target.value)}
-            style={{ marginLeft: 8 }}
-          >
-            <option value="stock">Stock</option>
-            <option value="crypto">Crypto</option>
-            <option value="commodity">Commodity</option>
-            <option value="property">Property</option>
-          </select>
-        </label>
+          <input
+            type="number"
+            step="any"
+            min="0"
+            placeholder="Price (leave empty for auto)"
+            value={form.price}
+            onChange={(e) => update("price", e.target.value)}
+            disabled={submitting}
+          />
 
-        <div className="modal-actions">
-          <button className="cancel-btn" onClick={close}>
-            Cancel
-          </button>
+          {loadingPrice && (
+            <div style={{ opacity: 0.7, marginTop: -4, fontSize: "0.85rem" }}>
+              Fetching live market price...
+            </div>
+          )}
 
-          <button className="save-btn" onClick={handleSubmit}>
-            {form._id ? "Save" : "Add"}
-          </button>
-        </div>
+          <label style={{ marginTop: 6, display: "block" }}>
+            Category:
+            <select
+              value={form.category}
+              onChange={(e) => update("category", e.target.value)}
+              disabled={submitting}
+              style={{ marginLeft: 8 }}
+            >
+              <option value="stock">Stock</option>
+              <option value="crypto">Crypto</option>
+              <option value="commodity">Commodity</option>
+              <option value="property">Property</option>
+            </select>
+          </label>
+
+          <div className="modal-actions">
+            <button
+              type="button"
+              className="cancel-btn"
+              onClick={close}
+              disabled={submitting}
+            >
+              Cancel
+            </button>
+
+            <button type="submit" className="save-btn" disabled={submitting}>
+              {submitting ? "Saving..." : form._id ? "Save" : "Add"}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );

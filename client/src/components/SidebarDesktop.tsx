@@ -1,6 +1,4 @@
-// src/components/SidebarDesktop.tsx
-
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import React, { useEffect, useState } from "react";
 import {
   LayoutDashboard,
@@ -10,10 +8,13 @@ import {
   LogOut,
   User,
 } from "lucide-react";
+import { useAuth } from "../hooks/useAuth";
 import "./SidebarDesktop.css";
 
 export default function SidebarDesktop() {
   const { pathname } = useLocation();
+  const navigate = useNavigate();
+  const { user, logout } = useAuth();
 
   // true = collapsed (thin)
   const [collapsed, setCollapsed] = useState<boolean>(true);
@@ -44,6 +45,11 @@ export default function SidebarDesktop() {
       document.body.classList.add("sidebar-expanded");
     }
   }, [collapsed]);
+
+  const handleLogout = () => {
+    logout();
+    navigate("/login");
+  };
 
   return (
     <aside
@@ -101,31 +107,22 @@ export default function SidebarDesktop() {
       </nav>
 
       {/* FOOTER PROFILE */}
-      {/* FOOTER PROFILE */}
-<div className="sidebar-footer">
-  <div className="profile">
-    <div className="avatar">
-      <User size={18} />
-    </div>
+      <div className="sidebar-footer">
+        <div className="profile">
+          <div className="avatar">
+            <User size={18} />
+          </div>
 
-    <div className="meta">
-      <div className="name">
-        {JSON.parse(localStorage.getItem("user") || "{}").name || "User"}
+          <div className="meta">
+            <div className="name">{user?.name || "User"}</div>
+          </div>
+        </div>
+
+        <button className="sb-logout" onClick={handleLogout}>
+          <LogOut size={16} />
+          <span className="sb-text">Logout</span>
+        </button>
       </div>
-    </div>
-  </div>
-
-  <button
-    className="sb-logout"
-    onClick={() => {
-      localStorage.removeItem("auth");
-      window.location.href = "/login";
-    }}
-  >
-    <LogOut size={16} />
-    <span className="sb-text">Logout</span>
-  </button>
-</div>
     </aside>
   );
 }

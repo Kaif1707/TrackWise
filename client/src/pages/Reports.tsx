@@ -1,8 +1,6 @@
-// src/pages/Reports.tsx
-import { useEffect, useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import "./Reports.css";
 import { Download, BarChart3, PieChart, Calendar } from "lucide-react";
-import axios from "axios";
 import {
   Chart as ChartJS,
   ArcElement,
@@ -14,6 +12,9 @@ import {
 } from "chart.js";
 import { Pie, Bar } from "react-chartjs-2";
 import jsPDF from "jspdf";
+import { useAssets } from "../hooks/useAssets";
+import { IAsset } from "../types";
+import SkeletonLoader from "../components/SkeletonLoader";
 
 ChartJS.register(
   ArcElement,
@@ -24,101 +25,73 @@ ChartJS.register(
   BarElement
 );
 
-/* ---------------- TYPES ---------------- */
-
-type Asset = {
-  symbol: string;
-  name: string;
-  qty: number;
-  avgBuy: number;
-  price: number;
-  category?: "stock" | "crypto" | "commodity" | "property";
-};
-
 /* ---------------- EXPORT HELPERS ---------------- */
 
-function downloadCSV(assets: Asset[]) {
+function downloadCSV(assets: IAsset[]) {
   if (!assets.length) return;
 
   const header = "Symbol,Name,Qty,Avg Buy,LTP,Value,P/L (%)\n";
   const rows = assets
     .map((a) => {
       const value = a.qty * a.price;
-      const pl = ((a.price - a.avgBuy) / a.avgBuy) * 100;
-      return `${a.symbol},${a.name},${a.qty},${a.avgBuy},${a.price},${value.toFixed(
+      const pl = a.avgBuy ? ((a.price - a.avgBuy) / a.avgBuy) * 100 : 0;
+      return `${a.symbol},"${a.name}",${a.qty},${a.avgBuy},${a.price},${value.toFixed(
         2
       )},${pl.toFixed(2)}%`;
     })
     .join("\n");
 
-  const blob = new Blob([header + rows], { type: "text/csv" });
+  const blob = new Blob([header + rows], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
 
   const link = document.createElement("a");
   link.href = url;
-  link.download = "portfolio_report.csv";
+  link.download = `trackwise_portfolio_report_${new Date().toISOString().slice(0, 10)}.csv`;
   link.click();
 
   URL.revokeObjectURL(url);
 }
 
-function downloadPDF(assets: Asset[]) {
+function downloadPDF(assets: IAsset[]) {
   const doc = new jsPDF();
-  let y = 12;
+  let y = 16;
 
-  doc.setFontSize(16);
-  doc.text("Portfolio Report", 10, y);
-  y += 10;
+  doc.setFontSize(18);
+  doc.text("TrackWise Portfolio Analytics Report", 14, y);
+  y += 8;
+  doc.setFontSize(10);
+  doc.text(`Generated: ${new Date().toLocaleString()}`, 14, y);
+  y += 12;
 
   doc.setFontSize(11);
 
-  assets.forEach((a) => {
+  assets.forEach((a, idx) => {
     const value = a.qty * a.price;
-    const pl = ((a.price - a.avgBuy) / a.avgBuy) * 100;
+    const pl = a.avgBuy ? ((a.price - a.avgBuy) / a.avgBuy) * 100 : 0;
 
     doc.text(
-      `${a.symbol} | Qty: ${a.qty} | LTP: $${a.price} | Value: $${value.toFixed(
+      `${idx + 1}. ${a.symbol} (${a.name}) | Qty: ${a.qty} | LTP: $${a.price} | Val: $${value.toFixed(
         2
       )} | P/L: ${pl.toFixed(2)}%`,
-      10,
+      14,
       y
     );
     y += 8;
 
-    if (y > 280) {
+    if (y > 270) {
       doc.addPage();
-      y = 10;
+      y = 16;
     }
   });
 
-  doc.save("portfolio_report.pdf");
+  doc.save(`trackwise_portfolio_report_${new Date().toISOString().slice(0, 10)}.pdf`);
 }
 
 /* ---------------- COMPONENT ---------------- */
 
 export default function Reports() {
+  const { assets, isLoading } = useAssets();
   const [range, setRange] = useState("monthly");
-  const [assets, setAssets] = useState<Asset[]>([]);
-
-  /* -------- FETCH FROM BACKEND -------- */
-
-  async function loadAssets() {
-    try {
-      const res = await axios.get("http://localhost:5000/api/assets");
-      setAssets(res.data);
-    } catch (err) {
-      console.error("Failed to load assets for reports", err);
-    }
-  }
-
-  useEffect(() => {
-    loadAssets();
-
-    // refresh when asset added/edited
-    window.addEventListener("assets-updated", loadAssets);
-    return () =>
-      window.removeEventListener("assets-updated", loadAssets);
-  }, []);
 
   /* ---------------- STATS ---------------- */
 
@@ -142,13 +115,15 @@ export default function Reports() {
     assets.forEach((a) => {
       const inv = a.qty * a.avgBuy;
       const cur = a.qty * a.price;
-      const pl = ((a.price - a.avgBuy) / a.avgBuy) * 100;
+      const pl = a.avgBuy ? ((a.price - a.avgBuy) / a.avgBuy) * 100 : 0;
 
       invested += inv;
       current += cur;
 
       const cat = a.category ?? "stock";
-      allocation[cat] += cur;
+      if (allocation[cat] !== undefined) {
+        allocation[cat] += cur;
+      }
 
       if (pl > bestPl) {
         bestPl = pl;
@@ -189,35 +164,33 @@ export default function Reports() {
           stats.allocation.property,
         ],
         backgroundColor: [
-          "rgba(78,156,255,0.6)",
-          "rgba(255,118,118,0.6)",
-          "rgba(255,220,120,0.6)",
-          "rgba(180,180,200,0.5)",
+          "rgba(78,156,255,0.7)",
+          "rgba(255,118,118,0.7)",
+          "rgba(255,220,120,0.7)",
+          "rgba(180,180,200,0.6)",
         ],
       },
     ],
   };
 
   const barData = {
-    labels: ["Jan", "Feb", "Mar", "Apr", "May"],
+    labels: assets.length > 0 ? assets.map((a) => a.symbol) : ["No Data"],
     datasets: [
       {
-        label: "Profit / Loss ($)",
-        data: assets.map(
-          (a) => a.qty * (a.price - a.avgBuy)
+        label: "Unrealized P/L ($)",
+        data: assets.length > 0 ? assets.map((a) => a.qty * (a.price - a.avgBuy)) : [0],
+        backgroundColor: assets.map((a) =>
+          a.price >= a.avgBuy ? "rgba(126, 231, 135, 0.8)" : "rgba(255, 123, 123, 0.8)"
         ),
-        backgroundColor: "rgba(78,156,255,0.8)",
       },
     ],
   };
-
-  /* ---------------- UI ---------------- */
 
   return (
     <section className="reports-page">
       <div className="reports-header">
         <h1>Reports & Insights</h1>
-        <p className="subtitle">Deep analytics of your portfolio</p>
+        <p className="subtitle">Deep financial analysis and portfolio reporting</p>
       </div>
 
       <div className="report-filter glass-card">
@@ -235,37 +208,57 @@ export default function Reports() {
       <div className="report-cards">
         <div className="glass-card rep-card">
           <h3>Total Return</h3>
-          <p className={stats.totalReturn >= 0 ? "number positive" : "number negative"}>
-            {stats.totalReturn.toFixed(2)}%
-          </p>
+          {isLoading ? (
+            <SkeletonLoader height="28px" width="80px" />
+          ) : (
+            <p className={stats.totalReturn >= 0 ? "number positive" : "number negative"}>
+              {stats.totalReturn.toFixed(2)}%
+            </p>
+          )}
         </div>
 
         <div className="glass-card rep-card">
-          <h3>Invested</h3>
-          <p className="number">${stats.invested.toLocaleString()}</p>
+          <h3>Total Invested</h3>
+          {isLoading ? (
+            <SkeletonLoader height="28px" width="100px" />
+          ) : (
+            <p className="number">${stats.invested.toLocaleString()}</p>
+          )}
         </div>
 
         <div className="glass-card rep-card">
           <h3>Current Value</h3>
-          <p className="number">${stats.current.toLocaleString()}</p>
+          {isLoading ? (
+            <SkeletonLoader height="28px" width="100px" />
+          ) : (
+            <p className="number">${stats.current.toLocaleString()}</p>
+          )}
         </div>
 
         <div className="glass-card rep-card">
           <h3>Best Performer</h3>
-          <p className="number positive">
-            {stats.bestSymbol
-              ? `${stats.bestSymbol} (+${stats.bestPl.toFixed(2)}%)`
-              : "—"}
-          </p>
+          {isLoading ? (
+            <SkeletonLoader height="28px" width="120px" />
+          ) : (
+            <p className="number positive">
+              {stats.bestSymbol
+                ? `${stats.bestSymbol} (+${stats.bestPl.toFixed(2)}%)`
+                : "—"}
+            </p>
+          )}
         </div>
 
         <div className="glass-card rep-card">
           <h3>Worst Performer</h3>
-          <p className="number negative">
-            {stats.worstSymbol
-              ? `${stats.worstSymbol} (${stats.worstPl.toFixed(2)}%)`
-              : "—"}
-          </p>
+          {isLoading ? (
+            <SkeletonLoader height="28px" width="120px" />
+          ) : (
+            <p className="number negative">
+              {stats.worstSymbol && stats.worstSymbol !== stats.bestSymbol
+                ? `${stats.worstSymbol} (${stats.worstPl.toFixed(2)}%)`
+                : "—"}
+            </p>
+          )}
         </div>
       </div>
 
@@ -279,7 +272,7 @@ export default function Reports() {
 
         <div className="glass-card chart-box">
           <h3>
-            <BarChart3 size={18} /> Profit/Loss Trend
+            <BarChart3 size={18} /> Asset Profit/Loss Breakdown
           </h3>
           <Bar data={barData} />
         </div>
@@ -287,13 +280,13 @@ export default function Reports() {
 
       <div className="download-row glass-card">
         <h3>
-          <Calendar size={18} /> Export Reports
+          <Calendar size={18} /> Export Portfolio Statements
         </h3>
         <div className="download-actions">
-          <button className="download-btn" onClick={() => downloadCSV(assets)}>
+          <button className="download-btn" onClick={() => downloadCSV(assets)} disabled={assets.length === 0}>
             <Download size={16} /> Download CSV
           </button>
-          <button className="download-btn" onClick={() => downloadPDF(assets)}>
+          <button className="download-btn" onClick={() => downloadPDF(assets)} disabled={assets.length === 0}>
             <Download size={16} /> Download PDF
           </button>
         </div>

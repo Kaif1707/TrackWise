@@ -1,24 +1,22 @@
+import React, { Suspense, lazy } from "react";
 import { Routes, Route, useLocation } from "react-router-dom";
 
-import AppLayout from "./layouts/AppLayout";
-
-// Pages
-import Dashboard from "./pages/Dashboard";
-import Reports from "./pages/Reports";
-import Analytics from "./pages/Analytics";
-import Settings from "./pages/Settings";
-
-// Auth Pages
-import Login from "./pages/Login";
-import Signup from "./pages/Signup";
-import ForgotPassword from "./pages/ForgotPassword";
-
-// Components
+// Layouts & Global Components
 import ProtectedRoute from "./utils/ProtectedRoute";
 import Navbar from "./components/Navbar";
 import SidebarDesktop from "./components/SidebarDesktop";
+import RouteLoader from "./components/RouteLoader";
 
 import "./layouts/AppLayout.css";
+
+// Lazy-loaded Pages (Code Splitting)
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const Reports = lazy(() => import("./pages/Reports"));
+const Analytics = lazy(() => import("./pages/Analytics"));
+const Settings = lazy(() => import("./pages/Settings"));
+const Login = lazy(() => import("./pages/Login"));
+const Signup = lazy(() => import("./pages/Signup"));
+const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
 
 export default function App() {
   const location = useLocation();
@@ -37,49 +35,51 @@ export default function App() {
       {/* Layout Wrapper */}
       <div className="tw-layout-content">
         <main className={!isAuthPage ? "tw-main-content" : "auth-fullscreen"}>
-          <Routes>
-            {/* AUTH ROUTES */}
-            <Route path="/login" element={<Login />} />
-            <Route path="/signup" element={<Signup />} />
-            <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Suspense fallback={<RouteLoader />}>
+            <Routes>
+              {/* AUTH ROUTES */}
+              <Route path="/login" element={<Login />} />
+              <Route path="/signup" element={<Signup />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
 
-            {/* PROTECTED ROUTES */}
-            <Route
-              path="/"
-              element={
-                <ProtectedRoute>
-                  <Dashboard />
-                </ProtectedRoute>
-              }
-            />
+              {/* PROTECTED ROUTES */}
+              <Route
+                path="/"
+                element={
+                  <ProtectedRoute>
+                    <Dashboard />
+                  </ProtectedRoute>
+                }
+              />
 
-            <Route
-              path="/reports"
-              element={
-                <ProtectedRoute>
-                  <Reports />
-                </ProtectedRoute>
-              }
-            />
+              <Route
+                path="/reports"
+                element={
+                  <ProtectedRoute>
+                    <Reports />
+                  </ProtectedRoute>
+                }
+              />
 
-            <Route
-              path="/analytics"
-              element={
-                <ProtectedRoute>
-                  <Analytics />
-                </ProtectedRoute>
-              }
-            />
+              <Route
+                path="/analytics"
+                element={
+                  <ProtectedRoute>
+                    <Analytics />
+                  </ProtectedRoute>
+                }
+              />
 
-            <Route
-              path="/settings"
-              element={
-                <ProtectedRoute>
-                  <Settings />
-                </ProtectedRoute>
-              }
-            />
-          </Routes>
+              <Route
+                path="/settings"
+                element={
+                  <ProtectedRoute>
+                    <Settings />
+                  </ProtectedRoute>
+                }
+              />
+            </Routes>
+          </Suspense>
         </main>
       </div>
     </>

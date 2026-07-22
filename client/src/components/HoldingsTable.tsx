@@ -1,79 +1,42 @@
-// src/components/HoldingsTable.tsx
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import "./HoldingsTable.css";
-import axios from "axios";
 import {
   ArrowUpRight,
   ArrowDownRight,
   Edit2,
   Trash2,
+  Filter,
 } from "lucide-react";
 import AddAssetModal from "./AddAssetModal";
-
-type Holding = {
-  _id?: string;
-  symbol: string;
-  name: string;
-  qty: number;
-  avgBuy: number;
-  price: number;
-  trend?: number[];
-  img?: string;
-  category?: "stock" | "crypto" | "commodity" | "property";
-};
+import SkeletonLoader from "./SkeletonLoader";
+import { useAssets } from "../hooks/useAssets";
+import { IAsset, AssetCategory } from "../types";
 
 export default function HoldingsTable({
   initialSort = { key: "value", dir: "desc" as "asc" | "desc" },
 }: {
   initialSort?: { key: string; dir: "asc" | "desc" };
 }) {
+  const { assets, isLoading, removeAsset } = useAssets();
   const [q, setQ] = useState("");
-  const [assets, setAssets] = useState<Holding[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [sortKey, setSortKey] = useState(initialSort.key);
   const [sortDir, setSortDir] = useState<"asc" | "desc">(initialSort.dir);
 
-  const [editing, setEditing] = useState<Holding | null>(null);
+  const [editing, setEditing] = useState<IAsset | null>(null);
   const [showModal, setShowModal] = useState(false);
 
-  // ----------------------------------------------------
-  // 🔥 Load assets from backend
-  // ----------------------------------------------------
-  async function loadAssets() {
-    try {
-      const res = await axios.get("http://localhost:5000/api/assets");
-      setAssets(res.data);
-    } catch (err) {
-      console.error("Failed to load assets:", err);
-    }
-  }
-
-  useEffect(() => {
-    loadAssets();
-  }, []);
-
-  // ----------------------------------------------------
-  // DELETE
-  // ----------------------------------------------------
   async function handleDelete(id?: string) {
     if (!id) return;
-    if (!confirm("Delete this asset?")) return;
-
-    try {
-      await axios.delete(`http://localhost:5000/api/assets/${id}`);
-      loadAssets();
-    } catch (err) {
-      console.error("Delete failed:", err);
-    }
+    if (!window.confirm("Are you sure you want to delete this asset from your portfolio?")) return;
+    await removeAsset(id);
   }
 
-  function handleEdit(asset: Holding) {
+  function handleEdit(asset: IAsset) {
     setEditing(asset);
     setShowModal(true);
   }
 
-  // ----------------------------------------------------
-  // SORTING
-  // ----------------------------------------------------
   function toggleSort(key: string) {
     if (key === sortKey) {
       setSortDir((d) => (d === "asc" ? "desc" : "asc"));
@@ -83,9 +46,6 @@ export default function HoldingsTable({
     }
   }
 
-  // ----------------------------------------------------
-  // COMPUTE & SORT ROWS
-  // ----------------------------------------------------
   const rows = useMemo(() => {
     const mapped = assets.map((r) => {
       const value = r.qty * r.price;
@@ -95,10 +55,12 @@ export default function HoldingsTable({
 
     const filtered = mapped.filter((r) => {
       const ql = q.toLowerCase();
-      return (
+      const matchesSearch =
         r.symbol.toLowerCase().includes(ql) ||
-        r.name.toLowerCase().includes(ql)
-      );
+        r.name.toLowerCase().includes(ql);
+      const matchesCategory =
+        selectedCategory === "all" || r.category === selectedCategory;
+      return matchesSearch && matchesCategory;
     });
 
     return filtered.sort((a, b) => {
@@ -110,26 +72,38 @@ export default function HoldingsTable({
 
       return sortDir === "asc" ? A - B : B - A;
     });
-  }, [assets, q, sortKey, sortDir]);
+  }, [assets, q, selectedCategory, sortKey, sortDir]);
 
   const totalValue = rows.reduce((sum, r) => sum + r.value, 0);
 
-  // ----------------------------------------------------
-  // RENDER
-  // ----------------------------------------------------
   return (
     <div className="holdings-table-panel glass-card">
       <div className="ht-header">
         <div className="ht-title">Holdings</div>
 
-        <div className="ht-actions">
+        <div className="ht-actions" style={{ gap: "12px", alignItems: "center" }}>
+          {/* Category Filter */}
+          <select
+            className="ht-search"
+            style={{ width: "auto", cursor: "pointer" }}
+            value={selectedCategory}
+            onChange={(e) => setSelectedCategory(e.target.value)}
+          >
+            <option value="all">All Categories</option>
+            <option value="stock">Stocks</option>
+            <option value="crypto">Crypto</option>
+            <option value="commodity">Commodities</option>
+            <option value="property">Property</option>
+          </select>
+
+          {/* Search Input */}
           <input
             className="ht-search"
-            placeholder="Search..."
+            placeholder="Search by name or symbol..."
             value={q}
             onChange={(e) => setQ(e.target.value)}
           />
-          <div className="ht-total">Total: ${totalValue.toLocaleString()}</div>
+          <div className="ht-total">Filtered Total: ${totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
         </div>
       </div>
 
@@ -137,79 +111,108 @@ export default function HoldingsTable({
         <table className="ht-table">
           <thead>
             <tr>
-              <th onClick={() => toggleSort("symbol")}>Symbol</th>
+              <th onClick={() => toggleSort("symbol")} style={{ cursor: "pointer" }}>
+                Symbol {sortKey === "symbol" ? (sortDir === "asc" ? "▲" : "▼") : ""}
+              </th>
               <th>Name</th>
-              <th>Qty</th>
-              <th>Avg Buy</th>
-              <th>LTP</th>
-              <th>P/L %</th>
-              <th>Value</th>
+              <th onClick={() => toggleSort("qty")} style={{ cursor: "pointer" }}>
+                Qty {sortKey === "qty" ? (sortDir === "asc" ? "▲" : "▼") : ""}
+              </th>
+              <th onClick={() => toggleSort("avgBuy")} style={{ cursor: "pointer" }}>
+                Avg Buy {sortKey === "avgBuy" ? (sortDir === "asc" ? "▲" : "▼") : ""}
+              </th>
+              <th onClick={() => toggleSort("price")} style={{ cursor: "pointer" }}>
+                LTP {sortKey === "price" ? (sortDir === "asc" ? "▲" : "▼") : ""}
+              </th>
+              <th onClick={() => toggleSort("plPct")} style={{ cursor: "pointer" }}>
+                P/L % {sortKey === "plPct" ? (sortDir === "asc" ? "▲" : "▼") : ""}
+              </th>
+              <th onClick={() => toggleSort("value")} style={{ cursor: "pointer" }}>
+                Value {sortKey === "value" ? (sortDir === "asc" ? "▲" : "▼") : ""}
+              </th>
               <th>Trend</th>
               <th>Actions</th>
             </tr>
           </thead>
 
           <tbody>
-            {rows.map((r) => (
-              <tr key={r._id}>
-                <td className="td-symbol">
-                  <img src={r.img} className="symbol-thumb" />
-                  <div>
-                    <div className="sym">{r.symbol}</div>
-                    <div className="sym-sub">{r.name}</div>
-                  </div>
-                </td>
-
-                <td>{r.name}</td>
-                <td>{r.qty}</td>
-                <td>${r.avgBuy.toLocaleString()}</td>
-                <td>${r.price.toLocaleString()}</td>
-
-                <td>
-                  <div className={`pl ${r.plPct >= 0 ? "pos" : "neg"}`}>
-                    {r.plPct >= 0 ? (
-                      <ArrowUpRight size={14} />
+            {isLoading ? (
+              Array.from({ length: 4 }).map((_, idx) => (
+                <tr key={idx}>
+                  <td colSpan={9} style={{ padding: "12px 24px" }}>
+                    <SkeletonLoader height="28px" />
+                  </td>
+                </tr>
+              ))
+            ) : rows.length > 0 ? (
+              rows.map((r) => (
+                <tr key={r._id}>
+                  <td className="td-symbol">
+                    {r.img ? (
+                      <img src={r.img} className="symbol-thumb" alt={r.symbol} />
                     ) : (
-                      <ArrowDownRight size={14} />
+                      <div className="symbol-thumb-fallback">{r.symbol[0]}</div>
                     )}
-                    <span>{r.plPct.toFixed(2)}%</span>
-                  </div>
-                </td>
+                    <div>
+                      <div className="sym">{r.symbol}</div>
+                      <div className="sym-sub">{r.category?.toUpperCase()}</div>
+                    </div>
+                  </td>
 
-                <td>${r.value.toLocaleString()}</td>
+                  <td>{r.name}</td>
+                  <td>{r.qty}</td>
+                  <td>${r.avgBuy.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                  <td>${r.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
 
-                <td>
-                  <svg width={80} height={28}>
-                    <polyline
-                      fill="none"
-                      stroke={r.plPct >= 0 ? "#7EE787" : "#FF7B7B"}
-                      strokeWidth={2}
-                      points={(r.trend || [])
-                        .map((v, i) => `${i * 15},${28 - (v / (r.price || 1)) * 20}`)
-                        .join(" ")}
-                    ></polyline>
-                  </svg>
-                </td>
+                  <td>
+                    <div className={`pl ${r.plPct >= 0 ? "pos" : "neg"}`}>
+                      {r.plPct >= 0 ? (
+                        <ArrowUpRight size={14} />
+                      ) : (
+                        <ArrowDownRight size={14} />
+                      )}
+                      <span>{r.plPct.toFixed(2)}%</span>
+                    </div>
+                  </td>
 
-                <td>
-                  <button className="action-btn" onClick={() => handleEdit(r)}>
-                    <Edit2 size={16} />
-                  </button>
+                  <td>${r.value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
 
-                  <button
-                    className="action-btn danger"
-                    onClick={() => handleDelete(r._id)}
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                </td>
-              </tr>
-            ))}
+                  <td>
+                    <svg width={80} height={28}>
+                      <polyline
+                        fill="none"
+                        stroke={r.plPct >= 0 ? "#7EE787" : "#FF7B7B"}
+                        strokeWidth={2}
+                        points={(r.trend || [r.avgBuy, r.price])
+                          .map((v, i) => `${i * 15},${28 - (v / (r.price || 1)) * 20}`)
+                          .join(" ")}
+                      />
+                    </svg>
+                  </td>
 
-            {rows.length === 0 && (
+                  <td>
+                    <button
+                      className="action-btn"
+                      onClick={() => handleEdit(r)}
+                      title="Edit Asset"
+                    >
+                      <Edit2 size={16} />
+                    </button>
+
+                    <button
+                      className="action-btn danger"
+                      onClick={() => handleDelete(r._id)}
+                      title="Delete Asset"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </td>
+                </tr>
+              ))
+            ) : (
               <tr>
-                <td colSpan={9} style={{ padding: 24, opacity: 0.7 }}>
-                  No holdings found.
+                <td colSpan={9} style={{ padding: 32, textAlign: "center", opacity: 0.7 }}>
+                  No asset holdings found matching criteria. Click <strong>+ Add Asset</strong> to start tracking!
                 </td>
               </tr>
             )}
@@ -223,7 +226,6 @@ export default function HoldingsTable({
           close={() => {
             setShowModal(false);
             setEditing(null);
-            loadAssets(); // 🔥 refresh after saving
           }}
         />
       )}

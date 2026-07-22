@@ -1,17 +1,17 @@
-// src/pages/Dashboard.tsx
+import React, { useState, useMemo } from "react";
 import "./Dashboard.css";
 import PerformanceChart from "../components/PerformanceChart";
-import { useEffect, useState } from "react";
 import { ArrowUp, ArrowDown, TrendingUp, Clock } from "lucide-react";
 import HoldingsTable from "../components/HoldingsTable";
 import AddAssetModal from "../components/AddAssetModal";
 import ModalPortal from "../components/ModalPortal";
-import axios from "axios";
+import SkeletonLoader from "../components/SkeletonLoader";
+import { useAssets } from "../hooks/useAssets";
 
 function AnimatedNumber({ value, duration = 900 }: { value: number; duration?: number }) {
   const [display, setDisplay] = useState(0);
 
-  useEffect(() => {
+  React.useEffect(() => {
     let start = performance.now();
     const from = display;
     const diff = value - from;
@@ -25,63 +25,67 @@ function AnimatedNumber({ value, duration = 900 }: { value: number; duration?: n
     requestAnimationFrame(step);
   }, [value]);
 
-  return <span>{display.toLocaleString()}</span>;
+  return <span>{display.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</span>;
 }
 
 export default function Dashboard() {
-  const [assets, setAssets] = useState<any[]>([]);
+  const { assets, isLoading, summary } = useAssets();
   const [showModal, setShowModal] = useState(false);
-  const [insights, setInsights] = useState<any>(null);
 
-  // Load assets from storage
-  useEffect(() => {
-    const load = () => {
-      const raw = localStorage.getItem("assets");
-      const arr = raw ? JSON.parse(raw) : [];
-      setAssets(arr);
+  // Dynamic calculations memoized for performance
+  const metrics = useMemo(() => {
+    const totalVal = summary?.totalValue ?? assets.reduce((sum, a) => sum + a.qty * a.price, 0);
+    const count = summary?.holdingsCount ?? assets.length;
+
+    const todayProf = assets.reduce((sum, a) => {
+      if (!a.trend || a.trend.length < 2) return sum;
+      const diff = a.trend[a.trend.length - 1] - a.trend[a.trend.length - 2];
+      return sum + diff * a.qty;
+    }, 0);
+
+    const liq = Math.max(0, totalVal * 0.12);
+
+    return {
+      totalValue: totalVal,
+      holdingsCount: count,
+      todayProfit: todayProf,
+      liquidity: liq,
     };
+  }, [assets, summary]);
 
-    load();
-    window.addEventListener("assets-updated", load);
-    return () => window.removeEventListener("assets-updated", load);
-  }, []);
+  const insights = useMemo(() => {
+    if (!assets || assets.length === 0) return null;
 
-  // DYNAMIC METRICS
-  const totalValue = assets.reduce((sum, a) => sum + a.qty * a.price, 0);
-  const holdingsCount = assets.length;
+    const calcPLpct = (a: any) =>
+      a.avgBuy ? ((a.price - a.avgBuy) / a.avgBuy) * 100 : 0;
 
-  const todayProfit = assets.reduce((sum, a) => {
-    if (!a.trend || a.trend.length < 2) return sum;
-    const diff = a.trend[a.trend.length - 1] - a.trend[a.trend.length - 2];
-    return sum + diff * a.qty;
-  }, 0);
+    const sorted = [...assets].sort((a, b) => calcPLpct(b) - calcPLpct(a));
+    const topGainer = sorted[0];
+    const topLoser = sorted[sorted.length - 1];
 
-  const liquidity = Math.max(0, totalValue * 0.12);
+    const totalInvested = assets.reduce((sum, a) => sum + a.qty * a.avgBuy, 0);
+    const totalCurrent = assets.reduce((sum, a) => sum + a.qty * a.price, 0);
 
-  // 🔥 QUICK INSIGHTS (dynamic)
-  useEffect(() => {
-  async function loadAssets() {
-    try {
-      const res = await axios.get("http://localhost:5000/api/assets");
-      setAssets(res.data);
-    } catch (err) {
-      console.error("Failed to load assets", err);
-    }
-  }
+    const totalReturn =
+      totalInvested > 0
+        ? (((totalCurrent - totalInvested) / totalInvested) * 100).toFixed(2)
+        : "0";
 
-  loadAssets();
-
-  window.addEventListener("assets-updated", loadAssets);
-  return () => window.removeEventListener("assets-updated", loadAssets);
-}, []);
-
+    return {
+      topGainer,
+      topGainerPct: calcPLpct(topGainer),
+      topLoser,
+      topLoserPct: calcPLpct(topLoser),
+      totalReturn,
+    };
+  }, [assets]);
 
   return (
     <>
       <section className="tw-dashboard-grid">
         <div className="tw-dashboard-header">
           <div className="page-title">Overview</div>
-          <div className="page-sub">Your real-time portfolio data</div>
+          <div className="page-sub">Real-time performance metrics and asset distribution</div>
         </div>
 
         {/* METRIC CARDS */}
@@ -92,7 +96,7 @@ export default function Dashboard() {
               <div className="card-icon"><TrendingUp size={18} /></div>
             </div>
             <div className="card-value">
-              $<AnimatedNumber value={totalValue} />
+              {isLoading ? <SkeletonLoader height="36px" width="140px" /> : <>$<AnimatedNumber value={metrics.totalValue} /></>}
             </div>
           </article>
 
@@ -102,7 +106,7 @@ export default function Dashboard() {
               <div className="card-icon"><ArrowUp size={16} /></div>
             </div>
             <div className="card-value accent">
-              $<AnimatedNumber value={todayProfit} />
+              {isLoading ? <SkeletonLoader height="32px" width="100px" /> : <>$<AnimatedNumber value={metrics.todayProfit} /></>}
             </div>
           </article>
 
@@ -112,7 +116,7 @@ export default function Dashboard() {
               <div className="card-icon"><Clock size={16} /></div>
             </div>
             <div className="card-value">
-              <AnimatedNumber value={holdingsCount} />
+              {isLoading ? <SkeletonLoader height="32px" width="60px" /> : <AnimatedNumber value={metrics.holdingsCount} />}
             </div>
           </article>
 
@@ -122,106 +126,71 @@ export default function Dashboard() {
               <div className="card-icon"><ArrowDown size={16} /></div>
             </div>
             <div className="card-value">
-              $<AnimatedNumber value={liquidity} />
+              {isLoading ? <SkeletonLoader height="32px" width="100px" /> : <>$<AnimatedNumber value={metrics.liquidity} /></>}
             </div>
           </article>
         </div>
-
 
         {/* PERFORMANCE + INSIGHTS */}
         <div className="performance-row">
           <div className="performance-panel glass-card large-panel">
             <div className="panel-header">
               <div className="panel-title">Portfolio Performance</div>
-              <div className="panel-sub">Last 30 days</div>
+              <div className="panel-sub">Historical trend snapshot</div>
             </div>
             <div className="chart-area">
               <PerformanceChart assets={assets} />
-
             </div>
           </div>
 
-          {/* 🔥 DYNAMIC QUICK INSIGHTS */}
+          {/* DYNAMIC QUICK INSIGHTS */}
           <aside className="insights-panel glass-card small-panel">
-  <div className="panel-title">Quick Insights</div>
+            <div className="panel-title">Quick Insights</div>
 
-  {assets.length === 0 ? (
-    <p style={{ opacity: 0.7 }}>Add assets to view insights</p>
-  ) : (
-    (() => {
-      // -----------------------------
-      // Helper: Calculate % returns
-      // -----------------------------
-      const calcPLpct = (a: any) =>
-        a.avgBuy ? ((a.price - a.avgBuy) / a.avgBuy) * 100 : 0;
+            {isLoading ? (
+              <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginTop: "12px" }}>
+                <SkeletonLoader height="20px" />
+                <SkeletonLoader height="20px" />
+                <SkeletonLoader height="20px" />
+              </div>
+            ) : !insights ? (
+              <p style={{ opacity: 0.7, marginTop: 12 }}>Add assets to view real-time portfolio insights</p>
+            ) : (
+              <ul className="insights-list">
+                <li>
+                  Top gainer: <strong>{insights.topGainer.symbol}</strong>{" "}
+                  <span className="positive">
+                    (+{insights.topGainerPct.toFixed(2)}%)
+                  </span>
+                </li>
 
-      // -----------------------------
-      // Determine gainer & loser
-      // -----------------------------
-      const sorted = [...assets].sort(
-        (a, b) => calcPLpct(b) - calcPLpct(a)
-      );
+                <li>
+                  Top loser: <strong>{insights.topLoser.symbol}</strong>{" "}
+                  <span className="negative">
+                    {insights.topLoserPct.toFixed(2)}%
+                  </span>
+                </li>
 
-      const topGainer = sorted[0];
-      const topLoser = sorted[sorted.length - 1];
-
-      // -----------------------------
-      // Total portfolio return
-      // -----------------------------
-      const totalInvested = assets.reduce(
-        (sum, a) => sum + a.qty * a.avgBuy,
-        0
-      );
-
-      const totalCurrent = assets.reduce(
-        (sum, a) => sum + a.qty * a.price,
-        0
-      );
-
-      const totalReturn =
-        totalInvested > 0
-          ? (((totalCurrent - totalInvested) / totalInvested) * 100).toFixed(2)
-          : "0";
-
-      return (
-        <ul className="insights-list">
-          <li>
-            Top gainer: <strong>{topGainer.symbol}</strong>{" "}
-            <span className="positive">
-              (+{calcPLpct(topGainer).toFixed(2)}%)
-            </span>
-          </li>
-
-          <li>
-            Top loser: <strong>{topLoser.symbol}</strong>{" "}
-            <span className="negative">
-              {calcPLpct(topLoser).toFixed(2)}%
-            </span>
-          </li>
-
-          <li>
-            Portfolio return:{" "}
-            <strong
-              className={
-                Number(totalReturn) >= 0 ? "positive" : "negative"
-              }
-            >
-              {Number(totalReturn) >= 0 ? "+" : ""}
-              {totalReturn}%
-            </strong>
-          </li>
-        </ul>
-      );
-    })()
-  )}
-</aside>
-</div>
-
+                <li>
+                  Portfolio return:{" "}
+                  <strong
+                    className={
+                      Number(insights.totalReturn) >= 0 ? "positive" : "negative"
+                    }
+                  >
+                    {Number(insights.totalReturn) >= 0 ? "+" : ""}
+                    {insights.totalReturn}%
+                  </strong>
+                </li>
+              </ul>
+            )}
+          </aside>
+        </div>
 
         {/* HOLDINGS TABLE */}
         <div className="holdings-row glass-card holdings-panel">
           <div className="holdings-header">
-            <div className="holdings-title">Holdings</div>
+            <div className="holdings-title">Asset Allocation & Holdings</div>
             <button className="add-asset-btn" onClick={() => setShowModal(true)}>
               + Add Asset
             </button>

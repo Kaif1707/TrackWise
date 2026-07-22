@@ -1,38 +1,31 @@
-import Asset from "../models/Asset.js";
+import { asyncHandler } from "../utils/asyncHandler.js";
+import * as assetService from "../services/assetService.js";
 
-export async function getAssets(req, res) {
-  try {
-    const assets = await Asset.find();
-    res.json(assets);
-  } catch (err) {
-    res.status(500).json({ error: "Failed to fetch assets" });
-  }
-}
+export const getAssets = asyncHandler(async (req, res) => {
+  const assets = await assetService.getAssetsByUser(req.user.id, req.query);
+  res.status(200).json(assets);
+});
 
-export async function addAsset(req, res) {
-  try {
-    const asset = new Asset(req.body);
-    await asset.save();
-    res.json(asset);
-  } catch (err) {
-    res.status(500).json({ error: "Failed to add asset" });
-  }
-}
+export const addAsset = asyncHandler(async (req, res) => {
+  const asset = await assetService.createAssetForUser(req.user.id, req.body);
+  res.status(201).json(asset);
+});
 
-export async function updateAsset(req, res) {
-  try {
-    const asset = await Asset.findByIdAndUpdate(req.params.id, req.body, { new: true });
-    res.json(asset);
-  } catch (err) {
-    res.status(500).json({ error: "Failed to update asset" });
-  }
-}
+export const updateAsset = asyncHandler(async (req, res) => {
+  const asset = await assetService.updateAssetForUser(
+    req.user.id,
+    req.params.id,
+    req.body
+  );
+  res.status(200).json(asset);
+});
 
-export async function deleteAsset(req, res) {
-  try {
-    await Asset.findByIdAndDelete(req.params.id);
-    res.json({ success: true });
-  } catch (err) {
-    res.status(500).json({ error: "Failed to delete asset" });
-  }
-}
+export const deleteAsset = asyncHandler(async (req, res) => {
+  await assetService.deleteAssetForUser(req.user.id, req.params.id);
+  res.status(200).json({ success: true });
+});
+
+export const getSummary = asyncHandler(async (req, res) => {
+  const summary = await assetService.getPortfolioSummaryForUser(req.user.id);
+  res.status(200).json(summary);
+});

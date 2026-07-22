@@ -1,4 +1,6 @@
-node_modules
+node_modules/
 .env
-dist
-build
+*.env
+dist/
+build/
+.DS_Store

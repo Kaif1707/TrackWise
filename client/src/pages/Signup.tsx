@@ -1,22 +1,25 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "../hooks/useAuth";
 import "./Auth.css";
 import Toast from "../components/Toast";
 
 export default function Signup() {
-  const nav = useNavigate();
+  const navigate = useNavigate();
+  const { register } = useAuth();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
-  const [err, setErr] = useState("");
+  const [submitting, setSubmitting] = useState(false);
   const [toast, setToast] = useState<{ msg: string; type: string } | null>(null);
 
   function showToast(msg: string, type: "success" | "error" | "warning" = "success") {
     setToast({ msg, type });
   }
 
-  function handleSignup() {
+  async function handleSignup(e: React.FormEvent) {
+    e.preventDefault();
     if (!name || !email || !password) {
       showToast("All fields are required", "error");
       return;
@@ -28,20 +31,24 @@ export default function Signup() {
       return;
     }
 
-    const passRegex =
-      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
-
-    if (!passRegex.test(password)) {
-      showToast("Weak password. Use A-Z, a-z, numbers & symbol.", "error");
+    if (password.length < 6) {
+      showToast("Password must be at least 6 characters long", "error");
       return;
     }
 
-    const user = { email, password, name };
-    localStorage.setItem("user", JSON.stringify(user));
-
-    showToast("Account created successfully!", "success");
-
-    setTimeout(() => nav("/login"), 1200);
+    setSubmitting(true);
+    try {
+      await register({ name, email, password });
+      showToast("Account created successfully!", "success");
+      setTimeout(() => navigate("/", { replace: true }), 800);
+    } catch (error: any) {
+      showToast(
+        error.response?.data?.message || "Registration failed. Please try again.",
+        "error"
+      );
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -57,28 +64,37 @@ export default function Signup() {
           />
         )}
 
-        <input
-          placeholder="Full Name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-        />
+        <form onSubmit={handleSignup}>
+          <input
+            placeholder="Full Name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            disabled={submitting}
+            required
+          />
 
-        <input
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-        />
+          <input
+            placeholder="Email"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            disabled={submitting}
+            required
+          />
 
-        <input
-          placeholder="Password"
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
+          <input
+            placeholder="Password (min 6 characters)"
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            disabled={submitting}
+            required
+          />
 
-        <button className="auth-btn" onClick={handleSignup}>
-          Sign Up
-        </button>
+          <button className="auth-btn" type="submit" disabled={submitting}>
+            {submitting ? "Creating Account..." : "Sign Up"}
+          </button>
+        </form>
 
         <Link to="/login" className="auth-link">
           Already have an account?
