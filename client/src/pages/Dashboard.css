@@ -1,138 +1,132 @@
-:root {
-  --glass-bg: rgba(18,22,28,0.55);
-  --glass-border: rgba(255,255,255,0.04);
-  --neon: rgba(78,156,255,0.16);
-  --neon-accent: #4e9cff;
-  --card-radius: 28px;
-}
-
-/* -------------------------------
-   DASHBOARD GRID
---------------------------------*/
 .tw-dashboard-grid {
   display: flex;
   flex-direction: column;
-  gap: 22px;
-  padding: 24px 28px;
+  gap: 28px;
+  padding: 32px;
   width: 100%;
   box-sizing: border-box;
-  margin-top: 72px; /* Fix navbar overlap */
+  margin-top: var(--navbar-height);
+  max-width: 1600px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
-/* -------------------------------
-   HEADER
---------------------------------*/
 .tw-dashboard-header {
   display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin-bottom: 4px;
+  justify-content: space-between;
+  align-items: flex-end;
 }
 
 .page-title {
-  color: var(--text);
-  font-size: 1.25rem;
-  font-weight: 700;
+  color: var(--text-primary);
+  font-size: 1.75rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
 }
 
 .page-sub {
-  color: var(--text);
-  opacity: 0.7;
+  color: var(--text-secondary);
   font-size: 0.95rem;
+  margin-top: 4px;
 }
 
-/* -------------------------------
-   TOP CARDS GRID
---------------------------------*/
+/* TOP CARDS GRID */
 .cards-row {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 18px;
+  gap: 20px;
 }
 
-/* -------------------------------
-   GLASS CARD
---------------------------------*/
 .glass-card {
-  background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.015));
-  border: 1px solid var(--glass-border);
-  border-radius: var(--card-radius);
-  padding: 18px;
-  color: var(--text);
-  box-shadow: 0 10px 30px rgba(0,0,0,0.45);
-  backdrop-filter: blur(14px) saturate(140%);
-  -webkit-backdrop-filter: blur(14px) saturate(140%);
-  transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+  position: relative;
   overflow: hidden;
 }
 
 .card-large {
-  grid-column: span 2;
-  min-height: 120px;
+  grid-column: span 1;
 }
 
 .card-top {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  margin-bottom: 12px;
 }
 
 .card-title {
-  font-size: 0.95rem;
-  opacity: 0.95;
-  font-weight: 600;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.card-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-md);
+  background: rgba(99, 102, 241, 0.12);
+  color: var(--accent-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .card-value {
-  font-size: 1.6rem;
-  font-weight: 700;
-  margin-top: 8px;
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
 }
 
 .card-value.accent {
-  color: var(--neon-accent);
+  color: var(--success);
 }
 
-/* meta info */
-.card-meta {
-  display: flex;
-  gap: 12px;
-  margin-top: 12px;
-  font-size: 0.9rem;
-  opacity: 0.85;
-}
-
-.meta-item {
+.card-badge-row {
+  margin-top: 14px;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
 }
 
-.meta-item.positive {
-  color: #7EE787;
+.badge-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: var(--radius-full);
+  font-size: 0.78rem;
+  font-weight: 700;
 }
 
-.glass-card:hover {
-  transform: translateY(-4px);
-  border-color: rgba(78,156,255,0.22);
-  box-shadow: 0 18px 45px rgba(0,0,0,0.55);
+.badge-tag.positive {
+  background: var(--success-bg);
+  color: var(--success);
 }
 
-/* -------------------------------
-   PERFORMANCE SECTION
---------------------------------*/
+.badge-tag.negative {
+  background: var(--danger-bg);
+  color: var(--danger);
+}
+
+.badge-sub {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+/* PERFORMANCE + INSIGHTS */
 .performance-row {
   display: grid;
-  grid-template-columns: 2fr 1fr;
-  gap: 18px;
+  grid-template-columns: 2.2fr 1fr;
+  gap: 20px;
 }
 
 .performance-panel {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding: 18px;
-  min-height: 300px;
+  gap: 20px;
+  min-height: 360px;
 }
 
 .panel-header {
@@ -142,119 +136,148 @@
 }
 
 .panel-title {
+  font-size: 1.15rem;
   font-weight: 700;
+  color: var(--text-primary);
 }
 
 .panel-sub {
-  opacity: 0.7;
-  font-size: 0.9rem;
+  color: var(--text-muted);
+  font-size: 0.85rem;
 }
 
 .chart-area {
   flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  width: 100%;
+  min-height: 260px;
 }
 
-/* -------------------------------
-   INSIGHTS
---------------------------------*/
 .insights-panel {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding: 18px;
+  gap: 16px;
 }
 
 .insights-list {
   list-style: none;
-  padding: 0;
-  margin: 0;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  opacity: 0.9;
-}
-
-.asset-snapshot {
-  margin-top: 8px;
-  display: flex;
   gap: 12px;
+  margin-top: 8px;
+}
+
+.insights-item {
+  display: flex;
   align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-color);
 }
 
-.asset-snapshot img {
-  width: 64px;
-  height: 64px;
-  border-radius: 12px;
-  object-fit: cover;
-  border: 1px solid rgba(255,255,255,0.04);
+.insights-item-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
-.asset-text {
-  opacity: 0.75;
+.insights-rank-badge {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.78rem;
 }
 
-/* -------------------------------
-   HOLDINGS PANEL
---------------------------------*/
+.insights-rank-badge.gainer {
+  background: var(--success-bg);
+  color: var(--success);
+}
+
+.insights-rank-badge.loser {
+  background: var(--danger-bg);
+  color: var(--danger);
+}
+
+.insights-label {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.insights-value {
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.positive {
+  color: var(--success);
+}
+
+.negative {
+  color: var(--danger);
+}
+
+/* HOLDINGS PANEL */
 .holdings-panel {
-  padding: 22px;
-  margin-top: 10px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
 }
 
 .holdings-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 16px;
 }
 
 .holdings-title {
-  font-size: 1.35rem;
-  font-weight: 600;
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--text-primary);
 }
 
 .add-asset-btn {
-  background: var(--neon-accent);
+  background: var(--accent-gradient);
   color: white;
   border: none;
-  padding: 8px 14px;
-  border-radius: 8px;
-  font-weight: 600;
+  padding: 10px 18px;
+  border-radius: var(--radius-md);
+  font-weight: 700;
+  font-size: 0.88rem;
   cursor: pointer;
-  transition: 0.15s ease;
+  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.3);
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-family);
 }
 
 .add-asset-btn:hover {
   transform: translateY(-2px);
-  opacity: 0.9;
+  box-shadow: 0 8px 20px rgba(99, 102, 241, 0.45);
 }
 
-/* -------------------------------
-   RESPONSIVE
---------------------------------*/
-@media (max-width: 1100px) {
+@media (max-width: 1200px) {
   .cards-row {
     grid-template-columns: repeat(2, 1fr);
-  }
-  .card-large {
-    grid-column: span 2;
   }
   .performance-row {
     grid-template-columns: 1fr;
   }
 }
 
-@media (max-width: 600px) {
+@media (max-width: 640px) {
   .tw-dashboard-grid {
-    padding: 20px 16px;
+    padding: 16px;
   }
   .cards-row {
     grid-template-columns: 1fr;
-  }
-  .glass-card {
-    padding: 14px;
   }
 }

@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { User, Mail, Lock, AlertCircle } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
 import "./Auth.css";
-import Toast from "../components/Toast";
 
 export default function Signup() {
   const navigate = useNavigate();
@@ -12,39 +12,35 @@ export default function Signup() {
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [toast, setToast] = useState<{ msg: string; type: string } | null>(null);
-
-  function showToast(msg: string, type: "success" | "error" | "warning" = "success") {
-    setToast({ msg, type });
-  }
+  const [err, setErr] = useState("");
 
   async function handleSignup(e: React.FormEvent) {
     e.preventDefault();
+    setErr("");
+
     if (!name || !email || !password) {
-      showToast("All fields are required", "error");
+      setErr("All fields are required");
       return;
     }
 
     const emailRegex = /^\S+@\S+\.\S+$/;
     if (!emailRegex.test(email)) {
-      showToast("Invalid email format", "error");
+      setErr("Invalid email address format");
       return;
     }
 
     if (password.length < 6) {
-      showToast("Password must be at least 6 characters long", "error");
+      setErr("Password must be at least 6 characters long");
       return;
     }
 
     setSubmitting(true);
     try {
       await register({ name, email, password });
-      showToast("Account created successfully!", "success");
-      setTimeout(() => navigate("/", { replace: true }), 800);
+      navigate("/", { replace: true });
     } catch (error: any) {
-      showToast(
-        error.response?.data?.message || "Registration failed. Please try again.",
-        "error"
+      setErr(
+        error.response?.data?.message || "Registration failed. Please try again."
       );
     } finally {
       setSubmitting(false);
@@ -54,51 +50,74 @@ export default function Signup() {
   return (
     <div className="auth-container">
       <div className="auth-box">
-        <h2 className="auth-title">Create Account</h2>
+        <div className="auth-header-brand">
+          <div className="auth-brand-logo">TW</div>
+          <h2 className="auth-title">Create Account</h2>
+          <p className="auth-subtitle">Join TrackWise to start tracking your assets</p>
+        </div>
 
-        {toast && (
-          <Toast
-            message={toast.msg}
-            type={toast.type as any}
-            onClose={() => setToast(null)}
-          />
+        {err && (
+          <div className="auth-error">
+            <AlertCircle size={16} />
+            <span>{err}</span>
+          </div>
         )}
 
         <form onSubmit={handleSignup}>
-          <input
-            placeholder="Full Name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            disabled={submitting}
-            required
-          />
+          <div className="input-group">
+            <label className="input-label">Full Name</label>
+            <div className="input-wrapper">
+              <User className="input-icon" size={18} />
+              <input
+                placeholder="John Doe"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                disabled={submitting}
+                required
+              />
+            </div>
+          </div>
 
-          <input
-            placeholder="Email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            disabled={submitting}
-            required
-          />
+          <div className="input-group">
+            <label className="input-label">Email Address</label>
+            <div className="input-wrapper">
+              <Mail className="input-icon" size={18} />
+              <input
+                placeholder="name@example.com"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                disabled={submitting}
+                required
+              />
+            </div>
+          </div>
 
-          <input
-            placeholder="Password (min 6 characters)"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            disabled={submitting}
-            required
-          />
+          <div className="input-group">
+            <label className="input-label">Password</label>
+            <div className="input-wrapper">
+              <Lock className="input-icon" size={18} />
+              <input
+                placeholder="At least 6 characters"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                disabled={submitting}
+                required
+              />
+            </div>
+          </div>
 
           <button className="auth-btn" type="submit" disabled={submitting}>
-            {submitting ? "Creating Account..." : "Sign Up"}
+            {submitting ? "Creating Account..." : "Create Account"}
           </button>
         </form>
 
-        <Link to="/login" className="auth-link">
-          Already have an account?
-        </Link>
+        <div className="auth-links-row" style={{ justifyContent: "center" }}>
+          <Link to="/login" className="auth-link">
+            Already have an account? Sign In
+          </Link>
+        </div>
       </div>
     </div>
   );

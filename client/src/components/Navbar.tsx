@@ -1,4 +1,5 @@
 import React from "react";
+import { Search } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
 import "./Navbar.css";
 
@@ -12,21 +13,32 @@ export default function Navbar() {
       .join("") || "U";
 
   return (
-    <nav className="tw-navbar">
-      <div className="nav-left">TrackWise</div>
+    <header className="tw-navbar">
+      <div className="nav-left-group">
+        <div className="nav-app-title">TrackWise</div>
+        <div className="market-status-pill">
+          <span className="status-dot"></span>
+          <span>Markets Active</span>
+        </div>
+      </div>
 
-      <div className="nav-right">
+      <div className="nav-right-group">
+        <div className="nav-search-bar" title="Global Asset Search">
+          <Search size={16} />
+          <span>Search holdings...</span>
+          <span className="nav-shortcut-badge">⌘K</span>
+        </div>
+
         {user && (
-          <div className="nav-profile">
+          <div className="nav-profile-card">
             <div className="nav-avatar">{initials}</div>
-
             <div className="nav-user-text">
-              <div className="nav-name">{user.name}</div>
-              <div className="nav-email">{user.email}</div>
+              <span className="nav-name">{user.name}</span>
+              <span className="nav-email">{user.email}</span>
             </div>
           </div>
         )}
       </div>
-    </nav>
+    </header>
   );
 }
